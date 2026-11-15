@@ -1,0 +1,21 @@
+
+# Secret keys and environment variables
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Next.js
+node_modules/
+.next/
+out/
+
+# Local test data
+database/races.json
