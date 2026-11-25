@@ -35,6 +35,7 @@ type HorseOdds = {
   fetched_at: string;
 };
 type RaceDetail = RaceSummary & {
+  jv_race_key: string | null;
   surface: string | null;
   distance: number | null;
   track_condition: string | null;
@@ -130,6 +131,16 @@ export default function PredictionsPage() {
   const [adviceById, setAdviceById] = useState<Record<string, string>>({});
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  type ComboState = {
+    status: "idle" | "loading" | "ok" | "missing" | "error";
+    odds?: number | null;
+    oddsMax?: number | null;
+    popularity?: number | null;
+    fetchedAt?: string | null;
+  };
+  const [combo, setCombo] = useState<ComboState>({ status: "idle" });
+  const selectedAiRef = useRef<AiPrediction | null>(null);
+  useEffect(() => { selectedAiRef.current = selectedAi; }, [selectedAi]);
 
   const loadMyPredictions = useCallback(async () => {
     const { data, error: dbError } = await supabase
@@ -203,7 +214,7 @@ export default function PredictionsPage() {
     setBetType("単勝");
     async function loadDetail() {
       const { data, error: dbError } = await supabase.from("horse_races")
-        .select(`id,race_date,venue,race_number,race_name,surface,distance,track_condition,weather,starts_at,
+        .select(`id,race_date,venue,race_number,race_name,jv_race_key,surface,distance,track_condition,weather,starts_at,
           horse_entries(id,horse_id,horse_number,bracket_number,horse_name,jockey_name,horse_age,horse_sex,carried_weight,popularity,entry_status),
           horse_odds(id,bet_type,selection,odds,odds_max,odds_status,fetched_at)`)
         .eq("id", selectedRace!.id).single();
@@ -267,6 +278,33 @@ export default function PredictionsPage() {
       setOdds(o ? String(Number(o.odds)) : "");
     }
   }, [picks, betType, winOdds, placeOdds, selectedAi]);
+
+  // 組み合わせ券種は、頭数が揃ったらPC側の最新オッズを取得して表示・自動入力する。
+  const comboRaceKey = detail?.jv_race_key ?? null;
+  useEffect(() => {
+    if (!comboRaceKey || betType === "単勝" || betType === "複勝" || picks.length !== needCount) {
+      setCombo({ status: "idle" });
+      return;
+    }
+    const parts = UNORDERED_BETS.has(betType) ? [...picks].sort((a, b) => a - b) : picks;
+    const selection = parts.join("-");
+    let active = true;
+    setCombo({ status: "loading" });
+    fetch(`/api/combo-odds?race_key=${comboRaceKey}&bet_type=${encodeURIComponent(betType)}&selection=${selection}`,
+      { cache: "no-store" })
+      .then(async res => {
+        const body: { found?: boolean; odds?: number | null; odds_max?: number | null;
+          popularity?: number | null; fetched_at?: string | null } = await res.json();
+        if (!active) return;
+        if (!res.ok) { setCombo({ status: "error" }); return; }
+        if (!body.found) { setCombo({ status: "missing" }); return; }
+        setCombo({ status: "ok", odds: body.odds, oddsMax: body.odds_max,
+          popularity: body.popularity, fetchedAt: body.fetched_at });
+        if (!selectedAiRef.current && body.odds != null) setOdds(String(body.odds));
+      })
+      .catch(() => { if (active) setCombo({ status: "error" }); });
+    return () => { active = false; };
+  }, [comboRaceKey, betType, picks, needCount]);
 
   function togglePick(num: number) {
     setSelectedAi(null);
@@ -578,7 +616,7 @@ export default function PredictionsPage() {
                   <p className="airef">AI参照中：{selectedAi.horse_number}番 / {selectedAi.model_version}（買い目やオッズを変更すると参照を解除します）</p>
                 )}
                 <div className="formgrid">
-                  <label>オッズ（任意・単勝/複勝は自動入力）
+                  <label>オッズ（任意・選択すると自動入力）
                     <input className="numinput" type="number" min="0.01" step="any" value={odds}
                       onChange={e => { setOdds(e.target.value); setSelectedAi(null); }} />
                   </label>
@@ -587,6 +625,14 @@ export default function PredictionsPage() {
                       onChange={e => setStake(e.target.value)} />
                   </label>
                 </div>
+                {betType !== "単勝" && betType !== "複勝" && picks.length === needCount && combo.status !== "idle" && (
+                  <p className="sub" style={{ marginTop: 10 }}>
+                    {combo.status === "loading" && "現在のオッズを取得しています..."}
+                    {combo.status === "ok" && <>現在の{betType}オッズ：<strong>{combo.odds != null ? combo.odds.toFixed(1) : "―"}{combo.oddsMax != null ? `〜${combo.oddsMax.toFixed(1)}` : ""}倍</strong>{combo.popularity != null ? `（${combo.popularity}番人気）` : ""}{combo.fetchedAt ? ` ・ ${new Date(combo.fetchedAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}時点` : ""}</>}
+                    {combo.status === "missing" && "この組み合わせのオッズは取得できませんでした（発売前または対象外のレースです）。"}
+                    {combo.status === "error" && "オッズを取得できませんでした（PC側の取得機能に接続できません）。"}
+                  </p>
+                )}
                 <div className="chips" style={{ marginTop: 10 }}>{STAKE_PRESETS.map(v => <button key={v} type="button" className={`chip ${Number(stake) === v ? "on" : ""}`} onClick={() => setStake(String(v))}>{v.toLocaleString()}円</button>)}</div>
                 <button type="submit" className="primary" disabled={saving}>{saving ? "保存中..." : "予想を保存する"}</button>
               </form>
