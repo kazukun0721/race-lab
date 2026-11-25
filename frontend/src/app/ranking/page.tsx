@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type Ranking = {
   user_id: string;
+  display_name: string | null;
   total_predictions: number;
   total_stake: number;
   total_payout: number;
@@ -94,7 +95,7 @@ export default function RankingPage() {
         <div className="rank-section-title"><b>02　メンバーランキング</b><small>{loading ? "LOADING" : `${sorted.length} MEMBERS`}</small></div>
         <section className="rank-panel">
           {error && <div className="rank-alert" role="alert">取得エラー：{error}</div>}
-          {loading ? <div className="rank-empty">ランキングを読み込み中...</div> : !error && sorted.length === 0 ? <div className="rank-empty"><strong>まだ集計済みデータがありません</strong><p>レース結果が確定するとランキングに反映されます。</p></div> : !error && <div className="rank-table-scroll"><table><thead><tr><th>順位</th><th>ユーザー</th><th>予想数</th><th>的中数</th><th>的中率</th><th>回収率</th><th>収支</th></tr></thead><tbody>{sorted.map((r, i) => <tr key={r.user_id} className={r.user_id === myId ? "rank-me" : ""}><td><span className={`rank-place ${i < 3 ? `top-${i + 1}` : ""}`}>{String(i + 1).padStart(2, "0")}</span></td><td><strong>{r.user_id.slice(0, 8)}</strong>{r.user_id === myId && <span className="rank-you">YOU</span>}</td><td className={sortBy === "total_predictions" ? "rank-focus" : ""}>{fmt(r.total_predictions)}</td><td>{fmt(r.hits)}</td><td>{percent(r.hit_rate)}</td><td className={sortBy === "return_rate" ? "rank-focus" : ""}>{percent(r.return_rate)}{r.return_rate != null && r.total_predictions < 10 && <small title="集計対象が10件未満です"> ・少数</small>}</td><td className={r.profit >= 0 ? "rank-positive" : "rank-negative"}>{money(r.profit)}</td></tr>)}</tbody></table></div>}
+          {loading ? <div className="rank-empty">ランキングを読み込み中...</div> : !error && sorted.length === 0 ? <div className="rank-empty"><strong>まだ集計済みデータがありません</strong><p>レース結果が確定するとランキングに反映されます。</p></div> : !error && <div className="rank-table-scroll"><table><thead><tr><th>順位</th><th>ユーザー</th><th>予想数</th><th>的中数</th><th>的中率</th><th>回収率</th><th>収支</th></tr></thead><tbody>{sorted.map((r, i) => <tr key={r.user_id} className={r.user_id === myId ? "rank-me" : ""}><td><span className={`rank-place ${i < 3 ? `top-${i + 1}` : ""}`}>{String(i + 1).padStart(2, "0")}</span></td><td><strong>{r.display_name || r.user_id.slice(0, 8)}</strong>{r.user_id === myId && <span className="rank-you">YOU</span>}</td><td className={sortBy === "total_predictions" ? "rank-focus" : ""}>{fmt(r.total_predictions)}</td><td>{fmt(r.hits)}</td><td>{percent(r.hit_rate)}</td><td className={sortBy === "return_rate" ? "rank-focus" : ""}>{percent(r.return_rate)}{r.return_rate != null && r.total_predictions < 10 && <small title="集計対象が10件未満です"> ・少数</small>}</td><td className={r.profit >= 0 ? "rank-positive" : "rank-negative"}>{money(r.profit)}</td></tr>)}</tbody></table></div>}
         </section>
         {!loading && !error && me >= 0 && <div className="rank-me-card"><span>YOUR POSITION</span><strong>{me + 1}<small>位 / {sorted.length}人</small></strong><p>現在の並び順：{options.find(o => o.key === sortBy)?.label}</p></div>}
         <p className="rank-note">※ 順位はSupabaseの get_ranking が返す集計値を使用しています。テストデータの除外や集計対象期間はRPCの定義に依存します。予想数10件未満の回収率には「少数」と表示します。未集計値は最下位に表示します。</p>
