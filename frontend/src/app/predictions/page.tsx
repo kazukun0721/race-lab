@@ -169,6 +169,8 @@ export default function PredictionsPage() {
   const [axisPos, setAxisPos] = useState(1);
   const [axisPosPair, setAxisPosPair] = useState("1-2");
   const [multi, setMulti] = useState(false);
+  const [showAi, setShowAi] = useState(false);
+  const [showCombos, setShowCombos] = useState(false);
   const [bulkOdds, setBulkOdds] = useState<Record<string,
     { odds: number | null; oddsMax: number | null; popularity: number | null }>>({});
   const [bulkStatus, setBulkStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
@@ -756,21 +758,21 @@ export default function PredictionsPage() {
         .rl-pred .brand{color:var(--green);font-weight:900;letter-spacing:2px;margin:0 7px 36px;font-size:16px}.rl-pred .sidecap{font-size:10px;letter-spacing:2px;color:var(--rl-muted);margin:0 10px 15px;font-weight:800}
         .rl-pred .navlink{display:flex;gap:13px;align-items:center;padding:14px 12px;border-radius:8px;color:var(--rl-sub);font-size:13px;font-weight:700;margin:3px 0}.rl-pred .navlink.active{background:var(--rl-accent-bg);color:var(--green);border-left:2px solid var(--green)}
         .rl-pred .workspace{margin-left:224px;min-width:0}.rl-pred .topbar{height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 35px;color:var(--rl-muted);font-size:10px;letter-spacing:1.8px;font-weight:800}
-        .rl-pred .content{max-width:1440px;margin:0 auto;padding:36px 38px 80px}.rl-pred .eyebrow{color:var(--green);font-size:10px;font-weight:900;letter-spacing:2px}.rl-pred h1{font-size:32px;margin:14px 0 8px;letter-spacing:-.5px}.rl-pred .sub{color:var(--muted);font-size:13px;line-height:1.7}
+        .rl-pred .content{max-width:1440px;margin:0 auto;padding:36px 38px 130px}.rl-pred .eyebrow{color:var(--green);font-size:10px;font-weight:900;letter-spacing:2px}.rl-pred h1{font-size:32px;margin:14px 0 8px;letter-spacing:-.5px}.rl-pred .sub{color:var(--muted);font-size:13px;line-height:1.7}
         .rl-pred .sectionhead{font-size:13px;font-weight:800;margin:26px 0 13px}.rl-pred .sectionhead b{color:var(--green);margin-right:12px;font-size:11px}.rl-pred .panel{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:20px}
         .rl-pred .selectors{display:flex;flex-wrap:wrap;gap:24px;align-items:end}.rl-pred .fieldlabel{display:block;color:var(--rl-muted);font-size:11px;font-weight:700;margin-bottom:9px}.rl-pred select{min-width:170px;padding:12px;background:var(--rl-panel);color:var(--rl-text);border:1px solid var(--rl-border);border-radius:8px}
         .rl-pred .chips{display:flex;flex-wrap:wrap;gap:8px}.rl-pred .chip{background:var(--rl-hover);color:var(--rl-text);border:1px solid var(--rl-border);padding:11px 15px;border-radius:8px;font-weight:800;font-size:12px}.rl-pred .chip.on{background:var(--green);color:var(--rl-accent-bg);border-color:var(--green)}
         .rl-pred .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}.rl-pred .metric{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}.rl-pred .metric .k{color:var(--rl-sub);font-size:10px;letter-spacing:1px;font-weight:800}.rl-pred .metric .v{font-size:23px;font-weight:900;margin-top:12px}.rl-pred .metric .v.small{font-size:14px}
-        .rl-pred .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.rl-pred table{border-collapse:collapse;width:100%;min-width:900px}.rl-pred th{text-align:left;color:var(--rl-muted);background:var(--rl-panel);font-size:11px;padding:15px 12px;border-bottom:1px solid var(--line);white-space:nowrap}.rl-pred td{padding:13px 12px;border-bottom:1px solid var(--rl-border);font-size:12px;vertical-align:middle}.rl-pred tr:last-child td{border-bottom:0}.rl-pred tbody tr{cursor:pointer}.rl-pred tbody tr:hover{background:var(--rl-hover)}.rl-pred tbody tr.picked{background:var(--rl-accent-bg)}
+        .rl-pred .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.rl-pred table{border-collapse:collapse;width:100%;min-width:640px}.rl-pred th{text-align:left;color:var(--rl-muted);background:var(--rl-panel);font-size:11px;padding:15px 12px;border-bottom:1px solid var(--line);white-space:nowrap}.rl-pred td{padding:13px 12px;border-bottom:1px solid var(--rl-border);font-size:12px;vertical-align:middle}.rl-pred tr:last-child td{border-bottom:0}.rl-pred tbody tr{cursor:pointer}.rl-pred tbody tr:hover{background:var(--rl-hover)}.rl-pred tbody tr.picked{background:var(--rl-accent-bg)}
         .rl-pred .horse{font-weight:800;color:var(--rl-text)}.rl-pred .number{font-weight:900;color:var(--green)}.rl-pred .muted{color:var(--rl-muted)}.rl-pred .orderbadge{display:inline-block;min-width:20px;text-align:center;background:var(--green);color:var(--rl-accent-bg);border-radius:10px;font-size:11px;font-weight:900;padding:2px 6px;margin-left:8px}
         .rl-pred .detailbtn{border:1px solid var(--rl-border);background:var(--rl-hover);color:var(--rl-accent-bright);border-radius:6px;padding:7px 9px;font-size:11px}.rl-pred .aibtn{border:1px solid var(--green);background:transparent;color:var(--green);border-radius:6px;padding:6px 8px;font-size:11px;font-weight:800;white-space:nowrap}
-        .rl-pred .markcell{text-align:center}.rl-pred .markbtn{width:28px;height:28px;border-radius:50%;border:2px solid var(--rl-muted);background:transparent;color:transparent;font-size:14px;font-weight:900;line-height:1;padding:0;cursor:pointer}.rl-pred .markbtn.on{background:var(--green);border-color:var(--green);color:#fff}.rl-pred .combopreview{max-height:190px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:10px}.rl-pred .comborow{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:12px;border-bottom:1px dashed var(--rl-border)}.rl-pred .comborow:last-child{border-bottom:0}.rl-pred .pickbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0}.rl-pred .pickchip{display:inline-flex;gap:8px;align-items:center;background:var(--rl-accent-bg);color:var(--rl-text);border:1px solid var(--green);border-radius:8px;padding:9px 12px;font-weight:800;font-size:12px}.rl-pred .pickchip button{background:none;border:0;color:var(--green);font-weight:900;padding:0}
+        .rl-pred .racesummary{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;font-size:13px}.rl-pred .stickybar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--rl-panel);border-top:1px solid var(--line);padding:10px 16px;display:flex;gap:14px;align-items:center;justify-content:space-between;box-shadow:0 -4px 18px rgba(0,0,0,.16)}.rl-pred .stickyinfo{display:flex;flex-direction:column;gap:2px;font-size:13px;min-width:0}.rl-pred .stickyinfo span{color:var(--rl-muted)}.rl-pred .stickyinfo .stickymsg{color:var(--green);font-weight:700}.rl-pred .stickybar .primary{margin:0;white-space:nowrap;padding:11px 20px}@media(min-width:900px){.rl-pred .stickybar{left:224px}}.rl-pred .markcell{text-align:center}.rl-pred .markbtn{width:28px;height:28px;border-radius:50%;border:2px solid var(--rl-muted);background:transparent;color:transparent;font-size:14px;font-weight:900;line-height:1;padding:0;cursor:pointer}.rl-pred .markbtn.on{background:var(--green);border-color:var(--green);color:#fff}.rl-pred .combopreview{max-height:190px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:10px}.rl-pred .comborow{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:12px;border-bottom:1px dashed var(--rl-border)}.rl-pred .comborow:last-child{border-bottom:0}.rl-pred .pickbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0}.rl-pred .pickchip{display:inline-flex;gap:8px;align-items:center;background:var(--rl-accent-bg);color:var(--rl-text);border:1px solid var(--green);border-radius:8px;padding:9px 12px;font-weight:800;font-size:12px}.rl-pred .pickchip button{background:none;border:0;color:var(--green);font-weight:900;padding:0}
         .rl-pred .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}.rl-pred .numinput{width:100%;padding:12px;background:var(--rl-bg);color:var(--rl-text);border:1px solid var(--rl-border);border-radius:8px;margin-top:6px}
         .rl-pred .primary{background:var(--green);color:var(--rl-accent-bg);padding:14px 17px;border-radius:8px;font-weight:900;font-size:13px;border:0;width:100%;margin-top:18px}.rl-pred .primary:disabled{opacity:.55;cursor:wait}
         .rl-pred .notice{border:1px solid var(--rl-accent-bg);background:var(--rl-panel);border-radius:10px;padding:14px 18px;color:var(--rl-accent-bright);font-size:12px;margin-top:18px}.rl-pred .alert{border-color:var(--rl-danger-border);background:var(--rl-panel);color:var(--rl-danger-text)}
         .rl-pred .airef{color:var(--rl-accent-bright);font-size:12px}.rl-pred .delbtn{border:1px solid var(--rl-border);background:transparent;color:var(--rl-muted);border-radius:6px;padding:5px 9px;font-size:11px}.rl-pred .delbtn.confirm{border-color:var(--rl-danger-border);color:var(--rl-danger-text);font-weight:800}.rl-pred .predcard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:18px;margin-bottom:12px}.rl-pred .predhead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.rl-pred .predsel{font-weight:800;margin-top:8px}.rl-pred .advicetext{white-space:pre-wrap;margin-top:12px;line-height:1.7}
         .rl-pred .mobilemenu{display:none}.rl-pred .empty{padding:34px;text-align:center;color:var(--rl-muted)}
-        @media(max-width:1050px){.rl-pred .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.rl-pred .content{padding:28px 22px 60px}}
+        @media(max-width:1050px){.rl-pred .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.rl-pred .content{padding:28px 22px 120px}}
         @media(max-width:720px){.rl-pred .side{display:none;width:230px}.rl-pred .side.open{display:block}.rl-pred .workspace{margin-left:0}.rl-pred .topbar{padding:0 18px}.rl-pred .mobilemenu{display:inline-flex;border:1px solid var(--rl-border);background:var(--rl-hover);color:var(--rl-accent-bright);border-radius:7px;padding:8px 12px}.rl-pred .content{padding:25px 15px 50px}.rl-pred h1{font-size:27px}.rl-pred .panel{padding:15px}.rl-pred .formgrid{grid-template-columns:1fr}.rl-pred .metrics{gap:8px}.rl-pred .metric{padding:13px}.rl-pred .metric .v{font-size:19px}}
       `}</style>
       <aside className={`side ${mobileNav ? "open" : ""}`}>
@@ -795,25 +797,17 @@ export default function PredictionsPage() {
                 <div><span className="fieldlabel">競馬場</span><div className="chips">{venues.map(v => <button key={v} className={`chip ${selectedVenue === v ? "on" : ""}`} aria-pressed={selectedVenue === v} onClick={() => { setVenue(v); setRaceNumber(null); }}>{v}</button>)}</div></div>
                 <div><span className="fieldlabel">レース</span><div className="chips">{availableRaces.map(r => <button key={r.id} className={`chip ${selectedRace?.id === r.id ? "on" : ""}`} aria-pressed={selectedRace?.id === r.id} onClick={() => setRaceNumber(r.race_number)}>{r.race_number}R{r.race_name ? ` ${r.race_name}` : ""}</button>)}</div></div>
               </div>
+              {detail && !loadingDetail && (
+                <div className="racesummary">
+                  <span><strong>{detail.venue} {detail.race_number}R{detail.race_name ? ` ${detail.race_name}` : ""}</strong><span className="muted">　{detail.surface ?? ""}{detail.distance ? `${detail.distance}m` : ""}　馬場：{detail.track_condition ?? "未登録"}　発走：{detail.starts_at ? new Date(detail.starts_at).toLocaleTimeString("ja-JP", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" }) : "未登録"}　{entries.length}頭　オッズ取得：{latestOddsTime ? new Date(latestOddsTime).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "未取得"}</span></span>
+                  <a className="detailbtn" href={`/races/horse?date=${detail.race_date}&venue=${encodeURIComponent(detail.venue)}&race=${detail.race_number}`}>AI予測・出馬表で見る ↗</a>
+                </div>
+              )}
             </section>
           </>}
           {loadingDetail && <div className="notice">選択レースの詳細を取得しています...</div>}
           {detail && !loadingDetail && <>
-            <div className="sectionhead"><b>02</b> レース情報 / {detail.venue} {detail.race_number}R{detail.race_name ? ` ${detail.race_name}` : ""}</div>
-            <section className="panel">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-                <div><h2 style={{ fontSize: 20, margin: "0 0 7px" }}>{detail.venue} {detail.race_number}R {detail.race_name ? ` / ${detail.race_name}` : ""}</h2><p className="sub">{detail.race_date}　/　{detail.surface ?? "種別未登録"}{detail.distance ? ` ${detail.distance}m` : ""}　/　馬場：{detail.track_condition ?? "未登録"}　/　天候：{detail.weather ?? "未登録"}</p></div>
-                <a className="detailbtn" href={`/races/horse?date=${detail.race_date}&venue=${encodeURIComponent(detail.venue)}&race=${detail.race_number}`}>AI予測・出馬表で見る ↗</a>
-              </div>
-              <div className="metrics">
-                <div className="metric"><div className="k">出走登録馬</div><div className="v">{entries.length}<span style={{ fontSize: 12 }}> 頭</span></div></div>
-                <div className="metric"><div className="k">発走予定</div><div className="v small">{detail.starts_at ? new Date(detail.starts_at).toLocaleTimeString("ja-JP", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" }) : "未登録"}</div></div>
-                <div className="metric"><div className="k">AI予測登録</div><div className="v">{aiByHorse.size}<span style={{ fontSize: 12 }}> 頭</span></div></div>
-                <div className="metric"><div className="k">オッズ最終取得</div><div className="v small">{latestOddsTime ? new Date(latestOddsTime).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "未取得"}</div></div>
-              </div>
-            </section>
-
-            <div className="sectionhead"><b>03</b> 買い目を作る</div>
+            <div className="sectionhead"><b>02</b> 買い目を作る</div>
             <section className="panel">
               <span className="fieldlabel">券種</span>
               <div className="chips">{BET_TYPES.map(t => <button key={t} type="button" className={`chip ${betType === t ? "on" : ""}`} aria-pressed={betType === t} onClick={() => handleBetTypeChange(t)}>{t}</button>)}</div>
@@ -847,7 +841,10 @@ export default function PredictionsPage() {
                 {mode === "フォーメーション" && <>{betType === "3連複" ? "グループ" : "着順"}ごとの列の〇にチェックを入れて、候補馬を選んでください。</>}
               </p>
               {aiMessage && <p className="sub" role="status">{aiMessage}</p>}
-              <div className="tablewrap" style={{ marginTop: 12 }}><table><thead><tr>{["枠", "馬番", ...(mode === "流し" ? ["軸", "相手"] : mode === "フォーメーション" ? formation.slice(0, needCount).map((_, i) => (betType === "3連複" ? `${i + 1}G` : `${i + 1}着`)) : ["選択"]), "馬名", "性齢", "騎手", "人気", "単勝オッズ", "AI勝率", "期待回収率", "AI評価", ""].map(h => <th key={h}>{h}</th>)}</tr></thead><tbody>
+              <div className="chips" style={{ marginTop: 10 }}>
+                <button type="button" className={`chip ${showAi ? "on" : ""}`} aria-pressed={showAi} onClick={() => setShowAi(v => !v)}>AI予測を表示（勝率・期待回収率・評価）</button>
+              </div>
+              <div className="tablewrap" style={{ marginTop: 12 }}><table><thead><tr>{["枠", "馬番", ...(mode === "流し" ? ["軸", "相手"] : mode === "フォーメーション" ? formation.slice(0, needCount).map((_, i) => (betType === "3連複" ? `${i + 1}G` : `${i + 1}着`)) : ["選択"]), "馬名", "騎手", "人気", "単勝オッズ", ...(showAi ? ["AI勝率", "期待回収率", "AI評価", ""] : [])].map(h => <th key={h}>{h}</th>)}</tr></thead><tbody>
                 {sortedEntries.map(h => {
                   const num = h.horse_number ?? -1;
                   const pred = aiByHorse.get(num);
@@ -874,21 +871,22 @@ export default function PredictionsPage() {
                       {(mode === "通常" || mode === "ボックス") && (
                         <td className="markcell"><button type="button" className={pickIndex >= 0 || isBox ? "markbtn on" : "markbtn"} aria-label={`${num}番を選択`} onClick={e => { e.stopPropagation(); toggleMark(num, "main"); }}>✓</button></td>
                       )}
-                      <td><span className="horse">{h.horse_name}</span></td>
-                      <td>{h.horse_sex ?? ""}{h.horse_age ?? ""}</td>
+                      <td><span className="horse">{h.horse_name}</span>{(h.horse_sex || h.horse_age) && <span className="muted" style={{ fontSize: 11 }}> {h.horse_sex ?? ""}{h.horse_age ?? ""}</span>}</td>
                       <td>{h.jockey_name ?? "-"}</td>
                       <td>{h.popularity ?? "-"}</td>
                       <td>{wo ? Number(wo.odds).toFixed(1) : "未取得"}</td>
-                      <td>{pred ? `${(pred.win_probability * 100).toFixed(1)}%` : "-"}</td>
-                      <td>{pred?.expected_return != null ? `${(pred.expected_return * 100).toFixed(1)}%` : "-"}</td>
-                      <td>{pred ? pred.recommendation : "-"}</td>
-                      <td>{pred && <button type="button" className="aibtn" onClick={(e) => { e.stopPropagation(); applyAiSelection(pred); }}>AIで選択</button>}</td>
+                      {showAi && <>
+                        <td>{pred ? `${(pred.win_probability * 100).toFixed(1)}%` : "-"}</td>
+                        <td>{pred?.expected_return != null ? `${(pred.expected_return * 100).toFixed(1)}%` : "-"}</td>
+                        <td>{pred ? pred.recommendation : "-"}</td>
+                        <td>{pred && <button type="button" className="aibtn" onClick={(e) => { e.stopPropagation(); applyAiSelection(pred); }}>AIで選択</button>}</td>
+                      </>}
                     </tr>
                   );
                 })}
               </tbody></table>{entries.length === 0 && <div className="empty">出走馬はまだ登録されていません。</div>}</div>
 
-              <form onSubmit={handleSave}>
+              <form id="pred-form" onSubmit={handleSave}>
                 {mode === "通常" && (
                   <div className="pickbar">
                     <span className="fieldlabel" style={{ margin: 0 }}>選択中の買い目（{picks.length}/{needCount}頭）</span>
@@ -956,6 +954,9 @@ export default function PredictionsPage() {
                     {bulkStatus === "error" && <p className="sub">オッズを取得できませんでした（PC側に接続できません）。オッズなしで保存されます。</p>}
                     {combos.length > 300 && <p className="sub">点数が多いため、各点のオッズ表示は省略されます。</p>}
                     {combos.length > 0 && combos.length <= 300 && (
+                      <button type="button" className="detailbtn" style={{ marginTop: 10 }} onClick={() => setShowCombos(v => !v)}>{showCombos ? "買い目一覧を隠す" : `買い目一覧とオッズを表示（${combos.length}点）`}</button>
+                    )}
+                    {showCombos && combos.length > 0 && combos.length <= 300 && (
                       <div className="combopreview">
                         {combos.map(sel => {
                           const o = bulkOdds[sel];
@@ -984,12 +985,12 @@ export default function PredictionsPage() {
               {message && <p role="status" style={{ marginTop: 14 }}>{message}</p>}
             </section>
 
-            <div className="sectionhead"><b>04</b> このレースの自分の予想（{thisRacePredictions.length}件）</div>
+            <div className="sectionhead"><b>03</b> このレースの自分の予想（{thisRacePredictions.length}件）</div>
             {thisRacePredictions.length === 0 && <p className="sub">このレースにはまだ予想を保存していません。</p>}
             {thisRacePredictions.map(p => predictionCard(p, true))}
           </>}
           {otherGroups.size > 0 && <>
-            <div className="sectionhead"><b>05</b> その他の自分の予想（{otherPredictions.length}件）</div>
+            <div className="sectionhead"><b>04</b> その他の自分の予想（{otherPredictions.length}件）</div>
             {[...otherGroups.entries()].map(([key, group]) => (
               <div key={key}>
                 <p className="sub" style={{ margin: "14px 0 8px" }}>{group[0].race_date}　{group[0].venue} {group[0].race_number}R{(() => { const g0 = group[0]; const rn = races.find(r => r.race_date === g0.race_date && r.venue === g0.venue && r.race_number === g0.race_number)?.race_name; return rn ? ` ${rn}` : ""; })()}</p>
@@ -999,6 +1000,18 @@ export default function PredictionsPage() {
           </>}
           {myPredictions.length === 0 && !loadingList && <p className="sub">まだ予想がありません。</p>}
         </main>
+        {detail && !loadingDetail && (
+          <div className="stickybar">
+            <div className="stickyinfo">
+              <strong>{detail.venue} {detail.race_number}R / {betType}{mode !== "通常" ? `・${mode}` : ""}</strong>
+              <span>{mode === "通常"
+                ? (picks.length > 0 ? `${picks.map(n => `${n} ${nameByNumber.get(n) ?? ""}`).join(" - ")} / ${(Number(stake) || 0).toLocaleString()}円` : "表の〇にチェックを入れてください")
+                : (combos.length > 0 ? `${combos.length}点 × ${(Number(stake) || 0).toLocaleString()}円 = 合計 ${(combos.length * (Number(stake) || 0)).toLocaleString()}円` : "軸・相手（または候補）を選んでください")}</span>
+              {message && <span className="stickymsg">{message}</span>}
+            </div>
+            <button type="submit" form="pred-form" className="primary" disabled={saving}>{saving ? "保存中..." : "予想を保存する"}</button>
+          </div>
+        )}
       </div>
     </div>
   );
