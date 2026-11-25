@@ -260,6 +260,17 @@ export default function HistoryPage() {
   const [horseError, setHorseError] = useState("");
   const horsePanel = useRef<HTMLDivElement>(null);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [light, setLight] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem("rh-theme") === "light") setLight(true);
+  }, []);
+
+  function toggleTheme() {
+    const next = !light;
+    setLight(next);
+    localStorage.setItem("rh-theme", next ? "light" : "dark");
+  }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -439,10 +450,13 @@ export default function HistoryPage() {
   }
 
   return (
-    <main className="rh-root">
+    <main className={light ? "rh-root rh-light" : "rh-root"}>
       <header className="rh-topbar">
         <span>WORKSPACE　 /　 RACE ARCHIVE</span>
         <span>JRA HISTORICAL DATABASE</span>
+        <button type="button" className="rh-theme-toggle" onClick={toggleTheme}>
+          テーマ：{light ? "ホワイト" : "ダーク"}
+        </button>
       </header>
 
       <div className="rh-content">
