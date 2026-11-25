@@ -19,6 +19,45 @@ export const MARK_SYMBOLS: Record<Mark, string> = {
   attention: "△",
 };
 const CYCLE: Mark[] = ["none", "primary", "secondary", "third", "attention"];
+
+// フォントの文字では印ごとに大きさ・太さがバラつくため、SVGで描く自作アイコン。
+// 全印を同じ24×24グリッドで設計し、色はボタンの color（currentColor）に従う。
+export function MarkIcon({ mark }: { mark: Mark }) {
+  const common = { width: 20, height: 20, viewBox: "0 0 24 24", "aria-hidden": true } as const;
+  switch (mark) {
+    case "primary": // ◎
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" strokeWidth="2.6" />
+          <circle cx="12" cy="12" r="3.6" fill="currentColor" />
+        </svg>
+      );
+    case "secondary": // ○
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" strokeWidth="2.6" />
+        </svg>
+      );
+    case "third": // ▲
+      return (
+        <svg {...common}>
+          <path d="M12 4.2 L21 19.8 L3 19.8 Z" fill="currentColor" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+        </svg>
+      );
+    case "attention": // △
+      return (
+        <svg {...common}>
+          <path d="M12 4.6 L20.6 19.4 L3.4 19.4 Z" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" />
+        </svg>
+      );
+    default: // 無印（＋）
+      return (
+        <svg {...common}>
+          <path d="M12 6.5 V17.5 M6.5 12 H17.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        </svg>
+      );
+  }
+}
 type SavedMark = { horse_number: number; mark: Mark; updated_at: string };
 
 // 予想印の読み込みと、タップごとの即時保存（楽観的更新＋失敗時ロールバック）。
