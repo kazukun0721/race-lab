@@ -8,7 +8,7 @@ export async function GET(
 
   const allowed =
     (path.length === 1 &&
-      ["stats", "races", "horses"].includes(path[0])) ||
+      ["stats", "races", "horses", "dates"].includes(path[0])) ||
     (path.length === 2 &&
       path[0] === "races" &&
       /^\d{16}$/.test(path[1])) ||
@@ -29,7 +29,7 @@ export async function GET(
 
   request.nextUrl.searchParams.forEach((value, key) => {
     if (
-      ["year", "venue", "limit", "offset"].includes(key) ||
+      ["year", "venue", "limit", "offset", "date"].includes(key) ||
       (path.length === 1 && path[0] === "horses" && key === "q")
     ) {
       url.searchParams.set(key, value);
