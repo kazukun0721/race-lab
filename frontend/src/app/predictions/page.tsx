@@ -774,6 +774,23 @@ export default function PredictionsPage() {
         .rl-pred .mobilemenu{display:none}.rl-pred .empty{padding:34px;text-align:center;color:var(--rl-muted)}
         @media(max-width:1050px){.rl-pred .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.rl-pred .content{padding:28px 22px 120px}}
         @media(max-width:720px){.rl-pred .side{display:none;width:230px}.rl-pred .side.open{display:block}.rl-pred .workspace{margin-left:0}.rl-pred .topbar{padding:0 18px}.rl-pred .mobilemenu{display:inline-flex;border:1px solid var(--rl-border);background:var(--rl-hover);color:var(--rl-accent-bright);border-radius:7px;padding:8px 12px}.rl-pred .content{padding:25px 15px 50px}.rl-pred h1{font-size:27px}.rl-pred .panel{padding:15px}.rl-pred .formgrid{grid-template-columns:1fr}.rl-pred .metrics{gap:8px}.rl-pred .metric{padding:13px}.rl-pred .metric .v{font-size:19px}}
+        @media(max-width:820px){
+          .rl-pred th{padding:9px 8px;font-size:10px}
+          .rl-pred td{padding:9px 8px}
+          .rl-pred table{min-width:560px}
+          .rl-pred .content{padding-bottom:132px}
+          .rl-pred select{min-width:0;width:100%}
+          .rl-pred .selectors>div{flex:1 1 140px;min-width:0}
+          .rl-pred .chip{padding:9px 11px}
+          .rl-pred .markbtn{width:32px;height:32px}
+          .rl-pred .stickybar{padding:8px 10px;gap:8px}
+          .rl-pred .stickyinfo{font-size:12px}
+          .rl-pred .stickybar .primary{padding:11px 14px}
+          .rl-pred .predcard{padding:13px}
+          .rl-pred .aibtn{padding:8px 9px}
+          .rl-pred .combopreview{max-height:150px}
+        }
+
       `}</style>
       <aside className={`side ${mobileNav ? "open" : ""}`}>
         <div className="brand">RACE LAB.</div>

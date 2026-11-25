@@ -440,3 +440,10 @@
 .rh-bar-top3{background:#4c9aff}
 .rh-bar-pct{flex:0 0 52px;text-align:right;font-size:12px;font-weight:700;color:var(--rh-text)}
 .rh-bar-empty{padding:6px 20px 10px;color:var(--rh-muted);font-size:12px;margin:0}
+@media(max-width:600px){
+  .rh-table th,.rh-table td{padding:7px 6px;font-size:11px}
+  .rh-chart{margin:8px 12px 0}
+  .rh-aicomment{margin:12px 12px 0}
+  .rh-bar-row{padding:8px 12px 10px}
+  .rh-analysis{margin:8px 12px 20px}
+}

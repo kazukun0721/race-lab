@@ -260,6 +260,25 @@ export default function HorseRacesPage() {
         .rl-horse .mobilemenu{display:none}.rl-horse .empty{padding:34px;text-align:center;color:var(--rl-muted)}
         @media(max-width:1050px){.rl-horse .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.rl-horse .content{padding:28px 22px 60px}}
         @media(max-width:720px){.rl-horse .side{display:none;width:230px}.rl-horse .side.open{display:block}.rl-horse .workspace{margin-left:0}.rl-horse .topbar{padding:0 18px}.rl-horse .mobilemenu{display:inline-flex;border:1px solid var(--rl-border);background:var(--rl-hover);color:var(--rl-accent-bright);border-radius:7px;padding:8px 12px}.rl-horse .content{padding:25px 15px 50px}.rl-horse h1{font-size:27px}.rl-horse .panel{padding:15px}.rl-horse .selectors{gap:16px}.rl-horse .metrics{gap:8px}.rl-horse .metric{padding:13px}.rl-horse .metric .v{font-size:19px}}
+        @media(max-width:820px){
+          .rl-horse th{padding:9px 7px;font-size:10px}
+          .rl-horse td{padding:9px 7px}
+          .rl-horse table{min-width:900px}
+          .rl-horse th:nth-child(1),.rl-horse td:nth-child(1){width:32px;min-width:32px;max-width:32px}
+          .rl-horse th:nth-child(2),.rl-horse td:nth-child(2){left:31px;width:36px;min-width:36px;max-width:36px}
+          .rl-horse th:nth-child(3),.rl-horse td:nth-child(3){left:66px;width:44px;min-width:44px;max-width:44px}
+          .rl-horse th:nth-child(4),.rl-horse td:nth-child(4){left:109px;min-width:102px}
+          .rl-horse .markbtn2{width:30px;height:30px;border-radius:8px}
+          .rl-horse .formcell{min-width:98px}
+          .rl-horse .formname{max-width:104px}
+          .rl-horse select{min-width:0;width:100%}
+          .rl-horse .selectors>div{flex:1 1 140px;min-width:0}
+          .rl-horse .chip{padding:9px 11px}
+          .rl-horse .detailbtn{padding:8px 10px}
+          .rl-horse .modalback{padding:10px}
+          .rl-horse .modal{padding:16px}
+        }
+
       `}</style>
       <aside className={`side ${mobileNav ? "open" : ""}`}>
         <div className="brand">RACE LAB.</div>

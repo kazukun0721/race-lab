@@ -118,6 +118,13 @@ export default function RankingPage() {
       .rank-empty{padding:55px 20px;text-align:center;color:var(--rl-muted)}.rank-empty strong{display:block;color:var(--rl-text);font-size:16px;margin-bottom:10px}.rank-alert{padding:18px;color:var(--rl-danger-text)}
       .rank-me-card{margin-top:18px;border:1px solid var(--rl-accent-bg);background:var(--rl-panel);border-radius:9px;padding:20px 24px;display:flex;align-items:center;gap:20px}.rank-me-card>span{color:var(--rl-accent-bright);font-size:10px;letter-spacing:1.5px;font-weight:900}.rank-me-card strong{font-size:28px}.rank-me-card small{font-size:12px;color:var(--rl-sub);margin-left:7px}.rank-me-card p{margin-left:auto;color:var(--rl-muted)}.rank-note{font-size:11px;line-height:1.9;color:var(--rl-muted);margin-top:24px}
       @media(max-width:760px){.rank-side{width:56px;padding:18px 6px}.rank-logo{font-size:10px;overflow:hidden;white-space:nowrap;margin:0 2px 38px;letter-spacing:-.3px}.rank-side-label,.rank-side-foot{display:none}.rank-nav{font-size:0;justify-content:center;padding:13px 0}.rank-nav>span{font-size:19px;width:auto}.rank-top{padding:0 15px}.rank-content{padding:30px 15px 60px}.rank-heading{align-items:flex-start;flex-direction:column;margin-bottom:30px}.rank-heading h1{font-size:28px}.rank-sort-grid{grid-template-columns:1fr;gap:8px}.rank-sort{min-height:68px;padding:13px}.rank-sort strong{margin-bottom:5px}.rank-me-card{flex-wrap:wrap}.rank-me-card p{margin:0;width:100%}}
+        @media(max-width:760px){
+          .rank-panel th{padding:10px 9px}
+          .rank-panel td{padding:11px 9px;font-size:12px}
+          .rank-table-scroll table{min-width:600px}
+          .rank-me-card{padding:13px}
+        }
+
     `}</style>
   </div>;
 }

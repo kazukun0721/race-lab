@@ -99,3 +99,9 @@
   .rl-shared-body .rl-hero-emblem{display:none}
   .rl-shared-body .rank-heading{flex-direction:column;align-items:flex-start}
 }
+/* Mobile refinements 2026-11-26: prevent iOS input zoom, bigger tap targets. */
+@media(max-width:760px){
+  .rl-shared-body :is(input,select,textarea){font-size:16px!important}
+  .rl-shared-link{padding:12px}
+  .rl-shared-body :is(.rl-content,.rl466-main,.rl-review-content,.rank-content,.rl470-content){padding-bottom:56px!important}
+}
