@@ -60,18 +60,24 @@ export const isRaceId = (id: string) => /^[0-9]{16}$/.test(id);
 async function query<T>(
   path: string, params?: URLSearchParams, missing = "指定した馬またはレースが見つかりません。", timeout = 4000,
 ): Promise<T> {
+  const base = process.env.RACE_LAB_DATA_CENTER_URL;
   const port = process.env.RACE_LAB_DATA_CENTER_PORT ?? "8766";
   const unavailable = "DATA CENTERに接続できません。起動状態を確認してから、もう一度お試しください。";
-  if (!/^[0-9]{1,5}$/.test(port) || Number(port) < 1 || Number(port) > 65535) {
+  if (!base && (!/^[0-9]{1,5}$/.test(port) || Number(port) < 1 || Number(port) > 65535)) {
     throw new HorseDataError(unavailable);
   }
-  const url = new URL(path, "http://127.0.0.1:" + port);
+  const url = new URL(path, base ?? "http://127.0.0.1:" + port);
   if (params) url.search = params.toString();
 
   try {
     const response = await fetch(url, {
       cache: "no-store", signal: AbortSignal.timeout(timeout), redirect: "error",
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        ...(process.env.RACE_LAB_DATA_CENTER_KEY
+          ? { "x-racelab-key": process.env.RACE_LAB_DATA_CENTER_KEY }
+          : {}),
+      },
     });
     if (response.status === 404) throw new HorseDataError(missing, 404);
     if (response.status === 422) throw new HorseDataError("検索条件を確認してください。");
