@@ -271,6 +271,11 @@ export default function HorseRacesPage() {
           .rl-horse .markbtn2{width:30px;height:30px;border-radius:8px}
           .rl-horse .formcell{min-width:98px}
           .rl-horse .formname{max-width:104px}
+          .rl-horse td{line-height:1.45}
+          .rl-horse .formcell{min-width:118px}
+          .rl-horse .formcell .muted{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:126px}
+          .rl-horse .formname{max-width:126px}
+          .rl-horse td:nth-child(5),.rl-horse td:nth-child(6),.rl-horse td:nth-child(7){white-space:nowrap}
           .rl-horse select{min-width:0;width:100%}
           .rl-horse .selectors>div{flex:1 1 140px;min-width:0}
           .rl-horse .chip{padding:9px 11px}
