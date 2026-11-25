@@ -23,6 +23,7 @@ type Entry = {
   jockey: string | null;
   trainer: string | null;
   win_odds: number | null;
+  popularity: number | null;
   horse_id: string | null;
 };
 
@@ -250,6 +251,8 @@ export default function HistoryPage() {
   const [venue, setVenue] = useState("");
   const [raceId, setRaceId] = useState("");
   const [raceEntries, setRaceEntries] = useState<{ id: string; items: Entry[] } | null>(null);
+  const [sortKey, setSortKey] = useState<"finish" | "number" | "odds" | "popularity">("finish");
+  const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [horse, setHorse] = useState<HorseDetail | null>(null);
   const [horseLoading, setHorseLoading] = useState(false);
   const [horseError, setHorseError] = useState("");
@@ -358,8 +361,47 @@ export default function HistoryPage() {
   const entries = raceEntries?.id === selectedRaceId ? raceEntries?.items ?? [] : [];
   const detailLoading = Boolean(selectedRaceId && raceEntries?.id !== selectedRaceId);
 
+  const sortedEntries = useMemo(() => {
+    const value = (e: Entry): number | null => {
+      if (sortKey === "finish") {
+        return e.finish_position !== null && e.finish_position > 0
+          ? e.finish_position
+          : null;
+      }
+      if (sortKey === "number") return e.horse_number;
+      if (sortKey === "odds") return e.win_odds;
+      return e.popularity;
+    };
+
+    return [...entries].sort((a, b) => {
+      const av = value(a);
+      const bv = value(b);
+      if (av === null && bv === null) return a.horse_number - b.horse_number;
+      if (av === null) return 1;
+      if (bv === null) return -1;
+      if (av !== bv) return (av - bv) * sortDir;
+      return a.horse_number - b.horse_number;
+    });
+  }, [entries, sortKey, sortDir]);
+
+  function toggleSort(key: typeof sortKey) {
+    if (key === sortKey) {
+      setSortDir(d => (d === 1 ? -1 : 1));
+    } else {
+      setSortKey(key);
+      setSortDir(1);
+    }
+  }
+
+  function sortMark(key: typeof sortKey) {
+    if (key !== sortKey) return "";
+    return sortDir === 1 ? " ▲" : " ▼";
+  }
+
   useEffect(() => {
     if (!selectedRaceId) return;
+    setSortKey("finish");
+    setSortDir(1);
 
     let cancelled = false;
     void api<{ entries: Entry[] }>(
@@ -572,17 +614,18 @@ export default function HistoryPage() {
                 <table className="rh-table">
                   <thead>
                     <tr>
-                      <th>着順</th>
-                      <th>馬番</th>
+                      <th><button type="button" className="rh-sort" onClick={() => toggleSort("finish")}>着順{sortMark("finish")}</button></th>
+                      <th><button type="button" className="rh-sort" onClick={() => toggleSort("number")}>馬番{sortMark("number")}</button></th>
                       <th>馬名</th>
                       <th>騎手</th>
                       <th>調教師</th>
-                      <th>単勝</th>
+                      <th><button type="button" className="rh-sort" onClick={() => toggleSort("odds")}>単勝{sortMark("odds")}</button></th>
+                      <th><button type="button" className="rh-sort" onClick={() => toggleSort("popularity")}>人気{sortMark("popularity")}</button></th>
                       <th>過去成績</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {entries.map(e => (
+                    {sortedEntries.map(e => (
                       <tr key={e.horse_number}>
                         <td className="rh-finish">{formatFinish(e.finish_position, e.abnormal_code)}</td>
                         <td>
@@ -598,6 +641,7 @@ export default function HistoryPage() {
                         <td>{e.jockey || "－"}</td>
                         <td>{e.trainer || "－"}</td>
                         <td>{e.win_odds ?? "－"}</td>
+                        <td>{e.popularity ?? "－"}</td>
                         <td>
                           {e.horse_id
                             ? <button className="rh-history-link" disabled={horseLoading} onClick={() => void openHorse(e.horse_id!)}>
