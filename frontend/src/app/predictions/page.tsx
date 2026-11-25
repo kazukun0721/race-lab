@@ -166,7 +166,6 @@ export default function PredictionsPage() {
   const [partnerPicks, setPartnerPicks] = useState<number[]>([]);
   const [boxPicks, setBoxPicks] = useState<number[]>([]);
   const [formation, setFormation] = useState<number[][]>([[], [], []]);
-  const [pickTarget, setPickTarget] = useState<"axis" | "partner" | "col0" | "col1" | "col2">("axis");
   const [axisPos, setAxisPos] = useState(1);
   const [axisPosPair, setAxisPosPair] = useState("1-2");
   const [multi, setMulti] = useState(false);
@@ -449,33 +448,35 @@ export default function PredictionsPage() {
     setSelectedAi(null);
     setMessage("");
     clearGroups();
-    setPickTarget(m === "フォーメーション" ? "col0" : "axis");
     if (m !== "通常") { setPicks([]); setOdds(""); }
   }
 
-  function toggleRow(num: number) {
+  // マークカード方式：列ごとの〇（チェック）で選択する。
+  function toggleMark(num: number, target: string) {
     setSelectedAi(null);
     setMessage("");
-    if (mode === "通常") { togglePick(num); return; }
-    if (mode === "ボックス") {
-      setBoxPicks(prev => (prev.includes(num) ? prev.filter(n => n !== num) : [...prev, num]));
+    if (target === "main") {
+      if (mode === "ボックス") {
+        setBoxPicks(prev => (prev.includes(num) ? prev.filter(n => n !== num) : [...prev, num]));
+      } else {
+        togglePick(num);
+      }
       return;
     }
-    if (mode === "フォーメーション") {
-      const idx = Number(pickTarget.slice(3));
-      setFormation(prev => prev.map((col, i) => (i === idx
-        ? (col.includes(num) ? col.filter(n => n !== num) : [...col, num]) : col)));
-      return;
-    }
-    // 流し
-    if (pickTarget === "axis") {
+    if (target === "axis") {
       if (partnerPicks.includes(num)) return;
       setAxisPicks(prev => (prev.includes(num) ? prev.filter(n => n !== num)
         : prev.length >= maxAxis ? prev : [...prev, num]));
-    } else {
+      return;
+    }
+    if (target === "partner") {
       if (axisPicks.includes(num)) return;
       setPartnerPicks(prev => (prev.includes(num) ? prev.filter(n => n !== num) : [...prev, num]));
+      return;
     }
+    const idx = Number(target.slice(3));
+    setFormation(prev => prev.map((col, i) => (i === idx
+      ? (col.includes(num) ? col.filter(n => n !== num) : [...col, num]) : col)));
   }
 
   function togglePick(num: number) {
@@ -763,7 +764,7 @@ export default function PredictionsPage() {
         .rl-pred .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.rl-pred table{border-collapse:collapse;width:100%;min-width:900px}.rl-pred th{text-align:left;color:var(--rl-muted);background:var(--rl-panel);font-size:11px;padding:15px 12px;border-bottom:1px solid var(--line);white-space:nowrap}.rl-pred td{padding:13px 12px;border-bottom:1px solid var(--rl-border);font-size:12px;vertical-align:middle}.rl-pred tr:last-child td{border-bottom:0}.rl-pred tbody tr{cursor:pointer}.rl-pred tbody tr:hover{background:var(--rl-hover)}.rl-pred tbody tr.picked{background:var(--rl-accent-bg)}
         .rl-pred .horse{font-weight:800;color:var(--rl-text)}.rl-pred .number{font-weight:900;color:var(--green)}.rl-pred .muted{color:var(--rl-muted)}.rl-pred .orderbadge{display:inline-block;min-width:20px;text-align:center;background:var(--green);color:var(--rl-accent-bg);border-radius:10px;font-size:11px;font-weight:900;padding:2px 6px;margin-left:8px}
         .rl-pred .detailbtn{border:1px solid var(--rl-border);background:var(--rl-hover);color:var(--rl-accent-bright);border-radius:6px;padding:7px 9px;font-size:11px}.rl-pred .aibtn{border:1px solid var(--green);background:transparent;color:var(--green);border-radius:6px;padding:6px 8px;font-size:11px;font-weight:800;white-space:nowrap}
-        .rl-pred .combopreview{max-height:190px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:10px}.rl-pred .comborow{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:12px;border-bottom:1px dashed var(--rl-border)}.rl-pred .comborow:last-child{border-bottom:0}.rl-pred .pickbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0}.rl-pred .pickchip{display:inline-flex;gap:8px;align-items:center;background:var(--rl-accent-bg);color:var(--rl-text);border:1px solid var(--green);border-radius:8px;padding:9px 12px;font-weight:800;font-size:12px}.rl-pred .pickchip button{background:none;border:0;color:var(--green);font-weight:900;padding:0}
+        .rl-pred .markcell{text-align:center}.rl-pred .markbtn{width:28px;height:28px;border-radius:50%;border:2px solid var(--rl-muted);background:transparent;color:transparent;font-size:14px;font-weight:900;line-height:1;padding:0;cursor:pointer}.rl-pred .markbtn.on{background:var(--green);border-color:var(--green);color:#fff}.rl-pred .combopreview{max-height:190px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:10px}.rl-pred .comborow{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:12px;border-bottom:1px dashed var(--rl-border)}.rl-pred .comborow:last-child{border-bottom:0}.rl-pred .pickbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0}.rl-pred .pickchip{display:inline-flex;gap:8px;align-items:center;background:var(--rl-accent-bg);color:var(--rl-text);border:1px solid var(--green);border-radius:8px;padding:9px 12px;font-weight:800;font-size:12px}.rl-pred .pickchip button{background:none;border:0;color:var(--green);font-weight:900;padding:0}
         .rl-pred .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}.rl-pred .numinput{width:100%;padding:12px;background:var(--rl-bg);color:var(--rl-text);border:1px solid var(--rl-border);border-radius:8px;margin-top:6px}
         .rl-pred .primary{background:var(--green);color:var(--rl-accent-bg);padding:14px 17px;border-radius:8px;font-weight:900;font-size:13px;border:0;width:100%;margin-top:18px}.rl-pred .primary:disabled{opacity:.55;cursor:wait}
         .rl-pred .notice{border:1px solid var(--rl-accent-bg);background:var(--rl-panel);border-radius:10px;padding:14px 18px;color:var(--rl-accent-bright);font-size:12px;margin-top:18px}.rl-pred .alert{border-color:var(--rl-danger-border);background:var(--rl-panel);color:var(--rl-danger-text)}
@@ -821,10 +822,6 @@ export default function PredictionsPage() {
                 <div className="chips">{(["通常", "流し", "ボックス", ...((betType === "馬単" || betType === "3連複" || betType === "3連単") ? ["フォーメーション"] : [])] as BuyMode[]).map(m => <button key={m} type="button" className={`chip ${mode === m ? "on" : ""}`} aria-pressed={mode === m} onClick={() => handleModeChange(m)}>{m}</button>)}</div>
               </>}
               {mode === "流し" && <>
-                <div className="chips" style={{ marginTop: 12 }}>
-                  <button type="button" className={`chip ${pickTarget === "axis" ? "on" : ""}`} onClick={() => setPickTarget("axis")}>軸馬を選ぶ（{axisPicks.length}/{maxAxis}頭）</button>
-                  <button type="button" className={`chip ${pickTarget === "partner" ? "on" : ""}`} onClick={() => setPickTarget("partner")}>相手馬を選ぶ（{partnerPicks.length}頭）</button>
-                </div>
                 {(betType === "馬単" || (betType === "3連単" && axisPicks.length === 1)) && (
                   <div className="chips" style={{ marginTop: 10 }}>
                     <span className="sub" style={{ margin: 0 }}>軸の着順：</span>
@@ -843,21 +840,14 @@ export default function PredictionsPage() {
                   </div>
                 )}
               </>}
-              {mode === "フォーメーション" && (
-                <div className="chips" style={{ marginTop: 12 }}>
-                  {formation.slice(0, needCount).map((col, i) => (
-                    <button key={i} type="button" className={`chip ${pickTarget === `col${i}` ? "on" : ""}`} onClick={() => setPickTarget(`col${i}` as typeof pickTarget)}>{betType === "3連複" ? `${i + 1}グループ` : `${i + 1}着候補`}を選ぶ（{col.length}頭）</button>
-                  ))}
-                </div>
-              )}
               <p className="sub" style={{ marginTop: 12 }}>
-                {mode === "通常" && <>{betType}は{needCount}頭選びます。表の馬をタップして選択／解除{ORDERED_BETS.has(betType) ? "（タップした順番が着順指定になります）" : ""}。</>}
-                {mode === "流し" && <>軸馬を固定し、相手馬との全組み合わせを自動生成します。「軸馬を選ぶ／相手馬を選ぶ」を切り替えてから表の馬をタップしてください。</>}
-                {mode === "ボックス" && <>選んだ馬の全組み合わせを買います。表の馬をタップして{needCount}頭以上選んでください。</>}
-                {mode === "フォーメーション" && <>{betType === "3連複" ? "グループ" : "着順"}ごとに候補馬を選びます。列を切り替えてから表の馬をタップしてください。</>}
+                {mode === "通常" && <>{betType}は{needCount}頭選びます。「選択」列の〇にチェックを入れてください{ORDERED_BETS.has(betType) ? "（チェックした順番が着順指定になります）" : ""}。</>}
+                {mode === "流し" && <>軸馬を固定し、相手馬との全組み合わせを自動生成します。「軸」「相手」の列の〇にチェックを入れてください（軸は{maxAxis}頭まで）。</>}
+                {mode === "ボックス" && <>選んだ馬の全組み合わせを買います。「選択」列の〇にチェックを入れて{needCount}頭以上選んでください。</>}
+                {mode === "フォーメーション" && <>{betType === "3連複" ? "グループ" : "着順"}ごとの列の〇にチェックを入れて、候補馬を選んでください。</>}
               </p>
               {aiMessage && <p className="sub" role="status">{aiMessage}</p>}
-              <div className="tablewrap" style={{ marginTop: 12 }}><table><thead><tr>{["枠", "馬番", "馬名", "性齢", "騎手", "人気", "単勝オッズ", "AI勝率", "期待回収率", "AI評価", ""].map(h => <th key={h}>{h}</th>)}</tr></thead><tbody>
+              <div className="tablewrap" style={{ marginTop: 12 }}><table><thead><tr>{["枠", "馬番", ...(mode === "流し" ? ["軸", "相手"] : mode === "フォーメーション" ? formation.slice(0, needCount).map((_, i) => (betType === "3連複" ? `${i + 1}G` : `${i + 1}着`)) : ["選択"]), "馬名", "性齢", "騎手", "人気", "単勝オッズ", "AI勝率", "期待回収率", "AI評価", ""].map(h => <th key={h}>{h}</th>)}</tr></thead><tbody>
                 {sortedEntries.map(h => {
                   const num = h.horse_number ?? -1;
                   const pred = aiByHorse.get(num);
@@ -871,9 +861,19 @@ export default function PredictionsPage() {
                     : [];
                   const rowPicked = pickIndex >= 0 || axisIndex >= 0 || isPartner || isBox || formCols.length > 0;
                   return (
-                    <tr key={h.id} className={rowPicked ? "picked" : ""} onClick={() => h.horse_number !== null && toggleRow(h.horse_number)}>
+                    <tr key={h.id} className={rowPicked ? "picked" : ""} onClick={() => { if (h.horse_number !== null && (mode === "通常" || mode === "ボックス")) toggleMark(h.horse_number, "main"); }}>
                       <td>{h.bracket_number ?? "-"}</td>
-                      <td className="number">{h.horse_number ?? "未定"}{pickIndex >= 0 && ORDERED_BETS.has(betType) && <span className="orderbadge">{pickIndex + 1}</span>}{axisIndex >= 0 && <span className="orderbadge">軸{maxAxis > 1 ? axisIndex + 1 : ""}</span>}{isPartner && <span className="orderbadge">相手</span>}{isBox && <span className="orderbadge">BOX</span>}{formCols.length > 0 && <span className="orderbadge">{formCols.join("・")}列</span>}</td>
+                      <td className="number">{h.horse_number ?? "未定"}{pickIndex >= 0 && ORDERED_BETS.has(betType) && <span className="orderbadge">{pickIndex + 1}</span>}</td>
+                      {mode === "流し" && <>
+                        <td className="markcell"><button type="button" className={axisIndex >= 0 ? "markbtn on" : "markbtn"} aria-label={`${num}番を軸にする`} onClick={e => { e.stopPropagation(); toggleMark(num, "axis"); }}>✓</button></td>
+                        <td className="markcell"><button type="button" className={isPartner ? "markbtn on" : "markbtn"} aria-label={`${num}番を相手にする`} onClick={e => { e.stopPropagation(); toggleMark(num, "partner"); }}>✓</button></td>
+                      </>}
+                      {mode === "フォーメーション" && formation.slice(0, needCount).map((col, i) => (
+                        <td key={i} className="markcell"><button type="button" className={col.includes(num) ? "markbtn on" : "markbtn"} aria-label={`${num}番を${i + 1}列に入れる`} onClick={e => { e.stopPropagation(); toggleMark(num, `col${i}`); }}>✓</button></td>
+                      ))}
+                      {(mode === "通常" || mode === "ボックス") && (
+                        <td className="markcell"><button type="button" className={pickIndex >= 0 || isBox ? "markbtn on" : "markbtn"} aria-label={`${num}番を選択`} onClick={e => { e.stopPropagation(); toggleMark(num, "main"); }}>✓</button></td>
+                      )}
                       <td><span className="horse">{h.horse_name}</span></td>
                       <td>{h.horse_sex ?? ""}{h.horse_age ?? ""}</td>
                       <td>{h.jockey_name ?? "-"}</td>
