@@ -137,3 +137,8 @@
 @media (max-width: 600px) {
   .page .analysisTable { min-width: 590px; font-size: .875rem; }
 }
+
+.spotName { font-size: 1.3rem; font-weight: 800; margin: 4px 0; }
+.spotComment { line-height: 1.8; }
+.sireName { font-size: 1.05rem; margin: 18px 0 6px; }
+.sireName small { color: var(--rl-sub); font-weight: 400; margin-left: 6px; }

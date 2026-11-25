@@ -154,3 +154,31 @@ export function horsePerformance(id: string, scope: AnalysisScope, group: Analys
   params.set("scope",scope);
   return query<Performance>(path + "/pedigree-performance",params,"指定した馬IDは登録されていません。", 20000);
 }
+
+
+export type PickupHorse = {
+  horse_id: string; name: string; birth_year: string;
+  starts: number; wins: number; top3: number; g1_wins: number;
+  first_year: string; last_year: string; comment?: string;
+  upset_wins?: number; best_odds?: number;
+  best_win?: { race_name: string; race_date: string } | null;
+};
+export type Pickups = {
+  as_of: string;
+  spotlight_pool: PickupHorse[];
+  all_time: PickupHorse[];
+  recent: PickupHorse[];
+  generations: { year: string; horse: PickupHorse }[];
+  dark_horses: PickupHorse[];
+};
+export const horsePickups = () =>
+  query<Pickups>("/pickups", undefined, "ピックアップ情報を取得できませんでした。", 45000);
+
+export type SireOffspring = { count: number; top: PickupHorse[] };
+export type SireHit = {
+  breeding_id: string; name: string; birth_year: string | null;
+  as_sire: SireOffspring; as_damsire: SireOffspring;
+};
+export const sireSearch = (q: string) =>
+  query<{ sires: SireHit[] }>("/sire-search", new URLSearchParams({ q }),
+    "血統検索に失敗しました。", 45000);

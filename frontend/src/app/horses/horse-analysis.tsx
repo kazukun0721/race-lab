@@ -64,7 +64,7 @@ export async function AnalysisView({id,scopeInput,groupInput,asOf,venues}: {
   const groupNames = group === "venue" ? venues : groupLabels[group];
   const total = result.total;
   return <section className={styles.panel}>
-    <Link prefetch={false} href={href({horse:id})}>元の馬情報へ戻る</Link>
+    <Link prefetch={false} href={href({horse:id})}>元の馬へ戻る</Link>
     <h2>{result.horse_name}の血統・条件別成績</h2>
     <nav className={styles.ancestryActions} aria-label="成績の対象">
       {(Object.entries(scopes) as [AnalysisScope,string][]).map(([key,label]) =>

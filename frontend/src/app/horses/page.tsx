@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import {
-  ancestorDetails, ancestorLineage, horseDetails, horseSiblings, HorseDataError, historyFilterKeys,
+  ancestorDetails, ancestorLineage, horseDetails, horsePickups, horseSiblings, HorseDataError, historyFilterKeys, sireSearch,
   isHorseId, pedigreeForHorse, raceDetails, searchHorses,
-  type Ancestor, type HistoryFilters, type Line, type PedigreeSlot, type Relation, type Result,
+  type Ancestor, type HistoryFilters, type Line, type PedigreeSlot, type PickupHorse, type Pickups, type Relation, type Result, type SireHit,
 } from "@/lib/data-center";
 import { createClient } from "@/lib/supabase/server";
 import styles from "./horses.module.css";
@@ -225,7 +225,7 @@ async function AncestorView({ id, from, ancestry, line, depth }: {
   ];
   const context: Record<string, string> = related?.length ? {from,ancestry} : {};
   return <section className={styles.panel}>
-    {related?.length ? <p><Link prefetch={false} href={url({horse:from})}>元の馬情報へ戻る</Link>
+    {related?.length ? <p><Link prefetch={false} href={url({horse:from})}>元の馬へ戻る</Link>
       {" · "}{ancestryPath(ancestry)}（{related.join("・")}）</p> : null}
     <h2>{ancestor.name || "祖先の詳細は未確認"}</h2>
     <p>繁殖登録番号 {id}{ancestor.birth_year ? " · "+ancestor.birth_year+"年生" : ""}</p>
@@ -258,7 +258,7 @@ async function SiblingsView({id,relation,offset}: {id:string; relation:Relation;
   if (!isHorseId(id)) throw new HorseDataError("馬IDは半角数字10桁で入力してください。");
   const data = await horseSiblings(id,relation,offset);
   return <section className={styles.panel}>
-    <Link prefetch={false} href={url({horse:id})}>元の馬情報へ戻る</Link>
+    <Link prefetch={false} href={url({horse:id})}>元の馬へ戻る</Link>
     <h2>兄弟馬・半兄弟馬</h2>
     <nav className={styles.ancestryActions} aria-label="兄弟馬の関係">
       {(Object.entries(siblingLabels) as [Relation,string][]).map(([key,label]) =>
@@ -318,6 +318,106 @@ async function SearchResults({ q, offset }: { q: string; offset: number }) {
   </section>;
 }
 
+
+function pickupLine(h: PickupHorse) {
+  return `${h.starts}戦${h.wins}勝・3着以内${h.top3}回${h.g1_wins ? `・G1 ${h.g1_wins}勝` : ""}`;
+}
+
+function pickupList(horses: PickupHorse[]) {
+  return <ul className={styles.siblingList}>
+    {horses.map(h => <li key={h.horse_id}>
+      <div><Link prefetch={false} href={url({horse:h.horse_id})}>{h.name}</Link>
+        <small> {h.birth_year}年生まれ</small></div>
+      <span>{pickupLine(h)}</span>
+    </li>)}
+  </ul>;
+}
+
+async function HomeView({ tab }: { tab: string }) {
+  const tabs = [
+    { key: "all", label: "歴代の強豪" },
+    { key: "recent", label: "直近5年の名馬" },
+    { key: "gen", label: "世代別エース" },
+    { key: "dark", label: "伏兵ピックアップ" },
+  ];
+  const active = tabs.some(t => t.key === tab) ? tab : "all";
+  let data: Pickups | null = null;
+  try {
+    data = await horsePickups();
+  } catch {
+    data = null;
+  }
+  const spot = data && data.spotlight_pool.length
+    ? data.spotlight_pool[Math.floor(Math.random() * data.spotlight_pool.length)]
+    : null;
+  return <>
+    {spot && data && <section className={styles.panel}>
+      <h2>今日のピックアップ</h2>
+      <p className={styles.spotName}><Link prefetch={false} href={url({horse:spot.horse_id})}>{spot.name}</Link>
+        <span className={styles.muted}> {spot.birth_year}年生まれ</span></p>
+      <p>{pickupLine(spot)}</p>
+      {spot.comment && <p className={styles.spotComment}>{spot.comment}</p>}
+      <p className={styles.muted}>歴代勝利数ベスト50からランダム表示（{data.as_of}時点の集計）</p>
+    </section>}
+    <section className={styles.panel}>
+      <h2>強馬ランキング</h2>
+      <nav className={styles.ancestryActions} aria-label="ランキングの切り替え">
+        {tabs.map(t => <Link prefetch={false} key={t.key} aria-current={t.key === active ? "page" : undefined}
+          href={url({tab:t.key})}>{t.label}</Link>)}
+      </nav>
+      {!data ? <p className={styles.muted}>ピックアップ情報を取得できませんでした。PCのDATA CENTERが起動しているときに表示されます。</p>
+      : active === "gen" ? <ul className={styles.siblingList}>
+          {data.generations.map(g => <li key={g.year}>
+            <div><Link prefetch={false} href={url({horse:g.horse.horse_id})}>{g.horse.name}</Link>
+              <small> {g.year}年生まれ世代</small></div>
+            <span>{pickupLine(g.horse)}</span>
+          </li>)}
+        </ul>
+      : active === "dark" ? <ul className={styles.siblingList}>
+          {data.dark_horses.map(h => <li key={h.horse_id}>
+            <div><Link prefetch={false} href={url({horse:h.horse_id})}>{h.name}</Link>
+              <small> {h.birth_year}年生まれ</small></div>
+            <span>単勝50倍以上で {h.upset_wins}勝{h.best_win
+              ? ` · 最高 ${h.best_odds}倍（${h.best_win.race_date} ${h.best_win.race_name || "一般競走"}）` : ""}</span>
+          </li>)}
+        </ul>
+      : pickupList(active === "recent" ? data.recent : data.all_time)}
+      {data && <p className={styles.muted}>{active === "recent"
+        ? `集計対象は直近5年（${data.as_of}まで）の出走です。`
+        : active === "dark"
+          ? "過去データ（TARGET収録分）の単勝オッズで集計しています。"
+          : "集計はDATA CENTER収録レース（1986年以降）が対象です。"}</p>}
+    </section>
+    <section className={styles.panel}>
+      <h2>血統検索</h2>
+      <p className={styles.muted}>父・母父の名前で検索すると、その産駒を勝利数順に表示します。</p>
+      <form action="/horses" className={styles.search} role="search">
+        <label htmlFor="sire-q">父・母父の名前（部分一致）</label>
+        <div><input id="sire-q" name="sire" type="search" maxLength={64} required placeholder="例：ディープインパクト"/>
+          <button type="submit">産駒を検索</button></div>
+      </form>
+    </section>
+  </>;
+}
+
+async function SireView({ q }: { q: string }) {
+  if (q.length > 64) throw new HorseDataError("検索語は64文字以内で入力してください。");
+  const { sires } = await sireSearch(q);
+  const group = (title: string, g: SireHit["as_sire"]) => g.count === 0 ? null : <>
+    <p><strong>{title}（{g.count.toLocaleString("ja-JP")}頭）</strong></p>
+    {pickupList(g.top)}
+  </>;
+  return <section className={styles.panel}>
+    <h2>血統検索：{q}</h2>
+    {!sires.length ? <p>該当する父・母父は見つかりませんでした。</p> : sires.map(s => <div key={s.breeding_id}>
+      <h3 className={styles.sireName}>{s.name}{s.birth_year ? <small>（{s.birth_year}年生まれ）</small> : null}</h3>
+      {group("父としての産駒", s.as_sire)}
+      {group("母父としての産駒", s.as_damsire)}
+    </div>)}
+    <p className={styles.muted}>産駒の成績はDATA CENTER収録レース（1986年以降）の集計です。</p>
+  </section>;
+}
+
 function readOffset(field: Params[string]) {
   const text = value(field);
   if (!text) return 0;
@@ -337,6 +437,8 @@ async function Content({ searchParams }: { searchParams: Promise<Params> }) {
   const ancestor = value(params.ancestor);
   const siblings = value(params.siblings);
   const analysis = value(params.analysis);
+  const sire = value(params.sire).trim();
+  const tab = value(params.tab);
   const lineage = value(params.line) || "sire";
   const relation = value(params.relation) || "full";
   const depth = value(params.depth) || "12";
@@ -348,8 +450,8 @@ async function Content({ searchParams }: { searchParams: Promise<Params> }) {
   }
   let content;
   try {
-    if (offset === null || [horse,race,ancestor,siblings,analysis].filter(Boolean).length > 1 ||
-      ["q","horse","race","ancestor","siblings","analysis","scope","group","as_of","line","relation","depth","ancestry","from","offset",...historyFilterKeys].some((key) => Array.isArray(params[key]))) {
+    if (offset === null || [horse,race,ancestor,siblings,analysis,sire].filter(Boolean).length > 1 ||
+      ["q","horse","race","ancestor","siblings","analysis","sire","tab","scope","group","as_of","line","relation","depth","ancestry","from","offset",...historyFilterKeys].some((key) => Array.isArray(params[key]))) {
       throw new HorseDataError("検索条件を確認してください。");
     }
     // Await here so the local error panel handles upstream failures.
@@ -367,9 +469,10 @@ async function Content({ searchParams }: { searchParams: Promise<Params> }) {
         throw new HorseDataError("兄弟馬の検索条件を確認してください。");
       }
       content = await SiblingsView({id:siblings,relation,offset});
-    } else if (race) content = await RaceView({id:race,offset,from:value(params.from),historyOffset:readOffset(params.historyOffset) ?? 0,filters});
+    } else if (sire) content = await SireView({q:sire});
+    else if (race) content = await RaceView({id:race,offset,from:value(params.from),historyOffset:readOffset(params.historyOffset) ?? 0,filters});
     else if (horse) content = await HorseView({id:horse,offset,filters});
-    else content = await SearchResults({q,offset});
+    else content = q ? await SearchResults({q,offset}) : await HomeView({tab});
   } catch (error) {
     if (!(error instanceof HorseDataError)) throw error;
     content = <p className={styles.error} role="alert">{error.message}</p>;
@@ -386,8 +489,8 @@ async function Content({ searchParams }: { searchParams: Promise<Params> }) {
 
 export default function HorsesPage({ searchParams }: { searchParams: Promise<Params> }) {
   return <main className={styles.page}>
-    <header><h1>馬情報</h1></header>
-    <Suspense fallback={<p role="status">馬情報を読み込み中…</p>}>
+    <header><h1>馬検索</h1></header>
+    <Suspense fallback={<p role="status">馬検索を読み込み中…</p>}>
       <Content searchParams={searchParams}/>
     </Suspense>
   </main>;
