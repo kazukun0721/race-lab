@@ -204,9 +204,9 @@ export default function ReviewPage() {
           <div className="rl-review-eyebrow">● RACE INTELLIGENCE / REVIEW</div>
         <Link href="/predictions" style={{ color: "#93c5fd" }}>← 予想登録に戻る</Link>
         <h1>予測レビュー<span className="rl-review-title-dot">.</span></h1>
-        <p style={{ color: "#94a3b8" }}>本人の登録済み買い目を集計します。結果は手入力です。AI予測の生成時刻と購入登録時刻を照合します（AIによる原因推定は未実装）。</p>
+        <p style={{ color: "var(--rl-muted)" }}>本人の登録済み買い目を集計します。結果は手入力です。AI予測の生成時刻と購入登録時刻を照合します（AIによる原因推定は未実装）。</p>
         {loading ? <p>読み込み中...</p> : <>
-          <section style={{ background: "#172338", padding: 20, borderRadius: 12, marginBottom: 24 }}>
+          <section style={{ background: "var(--rl-hover)", padding: 20, borderRadius: 12, marginBottom: 24 }}>
             <h2>📈 成績ダッシュボード</h2>
             <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 12 }}>
               <label>競技 <select aria-label="競技フィルター" value={sportFilter} onChange={e => setSportFilter(e.target.value)} style={{ padding: 8, marginLeft: 8 }}>
@@ -222,21 +222,21 @@ export default function ReviewPage() {
                 ["投資額", yen(stake)], ["払戻額", yen(payout)],
                 ["収支", yen(payout - stake)], ["回収率", stake ? `${(payout / stake * 100).toFixed(2)}%` : "-"],
                 ["的中率", settled.length ? `${(hits / settled.length * 100).toFixed(1)}%` : "-"],
-              ].map(([label, value]) => <div key={label} style={{ background: "#0b1220", borderRadius: 8, padding: 14 }}>
-                <div style={{ color: "#94a3b8", fontSize: 13 }}>{label}</div><strong style={{ fontSize: 20 }}>{value}</strong>
+              ].map(([label, value]) => <div key={label} style={{ background: "var(--rl-bg)", borderRadius: 8, padding: 14 }}>
+                <div style={{ color: "var(--rl-muted)", fontSize: 13 }}>{label}</div><strong style={{ fontSize: 20 }}>{value}</strong>
               </div>)}
             </div>
-            <p style={{ color: "#94a3b8", fontSize: 12 }}>精算済みの買い目のみ金額・的中率の分母に使用。最大500件までの本人の履歴を表示。未分類にはレースIDのない過去データや競艇が含まれます。実データ区分はDBの登録情報に基づく暫定分類で、結果の公式確認を保証しません。</p>
+            <p style={{ color: "var(--rl-muted)", fontSize: 12 }}>精算済みの買い目のみ金額・的中率の分母に使用。最大500件までの本人の履歴を表示。未分類にはレースIDのない過去データや競艇が含まれます。実データ区分はDBの登録情報に基づく暫定分類で、結果の公式確認を保証しません。</p>
           </section>
-          <section style={{ background: "#172338", padding: 20, borderRadius: 12, marginBottom: 24 }}>
+          <section style={{ background: "var(--rl-hover)", padding: 20, borderRadius: 12, marginBottom: 24 }}>
             <h2>🔬 AI参照購入の成績</h2>
             <p>AI参照あり {aiReferenced.length}件 ／ 精算済み {aiSettled.length}件 ／ 参照した予測ID {uniqueAi}種類</p>
             <p>精算済みの投資 {yen(aiStake)} ／ 払戻 {yen(aiPayout)} ／ 回収率 {aiStake ? `${(aiPayout / aiStake * 100).toFixed(2)}%` : "-"}</p>
             <p style={{ color: "#fbbf24", fontSize: 13 }}>これはAI参照購入の収支であり、AIモデルの予測精度ではありません。同一馬への複数購入をモデル性能として重複計上しません。モデル別の診断結果は下の独立パネルに表示します。</p>
           </section>
-          <section style={{ background: "#172338", padding: 20, borderRadius: 12, marginBottom: 24 }}>
+          <section style={{ background: "var(--rl-hover)", padding: 20, borderRadius: 12, marginBottom: 24 }}>
             <h2>🧪 AIモデル別の予測性能診断</h2>
-            <p style={{ color: "#94a3b8", fontSize: 13 }}>
+            <p style={{ color: "var(--rl-muted)", fontSize: 13 }}>
               購入回数ではなく、レース・モデル・馬番ごとに1予測として集計します。
               Brierスコアは小さいほど誤差が小さくなりますが、テストデータの数値は実戦性能ではありません。
             </p>
@@ -248,16 +248,16 @@ export default function ReviewPage() {
             </select></label>
             {modelError && <p role="status" style={{ color: "#fbbf24" }}>{modelError}</p>}
             {!modelError && modelMetrics.filter(m => modelFilter === "all" || m.data_group === modelFilter).length === 0 &&
-              <p style={{ color: "#94a3b8" }}>該当するモデル診断データはありません。</p>}
+              <p style={{ color: "var(--rl-muted)" }}>該当するモデル診断データはありません。</p>}
             {!modelError && modelMetrics.filter(m => modelFilter === "all" || m.data_group === modelFilter).map((m, index) => {
               const eligible = m.evaluation_status === "REAL_CANDIDATE_CHECK_SOURCE";
               return <div key={`${m.race_date}-${m.venue}-${m.race_number}-${m.model_version}-${m.prediction_mode}-${index}`}
-                style={{ background: "#0b1220", padding: 14, borderRadius: 8, marginTop: 10 }}>
+                style={{ background: "var(--rl-bg)", padding: 14, borderRadius: 8, marginTop: 10 }}>
                 <strong style={{ overflowWrap: "anywhere", display: "block" }}>{m.model_version}</strong>
-                <p style={{ color: "#94a3b8", fontSize: 13, margin: "6px 0" }}>
+                <p style={{ color: "var(--rl-muted)", fontSize: 13, margin: "6px 0" }}>
                   {m.race_date} {m.venue} {m.race_number}R ／ {m.prediction_mode} ／ {m.data_group}
                 </p>
-                <p style={{ color: eligible ? "#fbbf24" : "#94a3b8", margin: "6px 0" }}>
+                <p style={{ color: eligible ? "#fbbf24" : "var(--rl-muted)", margin: "6px 0" }}>
                   判定: {metricStatus[m.evaluation_status] ?? m.evaluation_status}
                 </p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 14 }}>
@@ -275,24 +275,24 @@ export default function ReviewPage() {
             </p>
           </section>
           {raceError && <p role="status" style={{ color: "#fbbf24" }}>{raceError}</p>}
-          <section style={{ background: "#172338", padding: 20, borderRadius: 12, marginBottom: 24 }}>
+          <section style={{ background: "var(--rl-hover)", padding: 20, borderRadius: 12, marginBottom: 24 }}>
             <h2>確定済み {settled.length}件</h2>
             <p>投資 {yen(stake)} ／ 払戻 {yen(payout)} ／ 収支 {yen(payout - stake)}</p>
             <p>回収率 {stake ? (payout / stake * 100).toFixed(1) : "-"}% ／ 的中率 {settled.length ? (hits / settled.length * 100).toFixed(1) : "-"}%</p>
-            <small style={{ color: "#94a3b8" }}>確定済みの買い目単位で計算。未確定は分母に含めません。</small>
+            <small style={{ color: "var(--rl-muted)" }}>確定済みの買い目単位で計算。未確定は分母に含めません。</small>
           </section>
           {message && <p role="status" style={{ color: "#fbbf24" }}>{message}</p>}
           {aiError && <p role="status" style={{ color: "#fbbf24" }}>{aiError}</p>}
-          {filteredBets.map(b => <section key={b.id} style={{ background: "#172338", padding: 20, borderRadius: 12, marginBottom: 12 }}>
+          {filteredBets.map(b => <section key={b.id} style={{ background: "var(--rl-hover)", padding: 20, borderRadius: 12, marginBottom: 12 }}>
             <strong>{b.sport === "horse" ? "🐎" : "🚤"} {b.race_date} {b.venue} {b.race_number}R</strong>
-            <span style={{ marginLeft: 12, fontSize: 12, color: "#94a3b8" }}>[{kindOf(b) === "TEST" ? "テスト" : kindOf(b) === "REAL" ? "実データ（暫定）" : "未分類"}]</span>
-            {b.referenced_ai_prediction_id && b.referenced_ai_model_version === FIXED_MODEL_VERSION && <p style={{ fontSize: 13, color: "#86efac", overflowWrap: "anywhere" }}>
+            <span style={{ marginLeft: 12, fontSize: 12, color: "var(--rl-muted)" }}>[{kindOf(b) === "TEST" ? "テスト" : kindOf(b) === "REAL" ? "実データ（暫定）" : "未分類"}]</span>
+            {b.referenced_ai_prediction_id && b.referenced_ai_model_version === FIXED_MODEL_VERSION && <p style={{ fontSize: 13, color: "var(--rl-accent-bright)", overflowWrap: "anywhere" }}>
               AI参照保存済: {b.referenced_ai_model_version ?? "モデル不明"} ／ 勝率 {b.referenced_ai_win_probability === null ? "-" : `${(b.referenced_ai_win_probability * 100).toFixed(2)}%`} ／ 期待回収率 {b.referenced_ai_expected_return === null ? "-" : `${(b.referenced_ai_expected_return * 100).toFixed(2)}%`}
             </p>}
             <p>{b.bet_type} {b.selection} ／ 投資 {yen(b.stake)}{b.odds ? ` ／ 登録オッズ ${b.odds}倍` : ""}</p>
             {b.settled_at !== null ? <>
               <p>{b.is_hit ? "的中" : "不的中"} ／ 払戻 {yen(b.payout ?? 0)} ／ 収支 {yen((b.payout ?? 0) - b.stake)}</p>
-              <p style={{ color: "#94a3b8" }}>
+              <p style={{ color: "var(--rl-muted)" }}>
                 {b.is_hit
                   ? "事後検証：この買い目は的中しました。ただし、1回の的中だけでは予測精度を判断できません。"
                   : "事後検証：この買い目は不的中でした。ただし、1回の不的中だけでは予測が誤っていたとは判断できません。"}
@@ -300,24 +300,24 @@ export default function ReviewPage() {
             </> : <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
               <label>的中時の払戻額（円） <input type="number" min="1" step="1" value={amounts[b.id] ?? ""}
                 onChange={e => setAmounts(prev => ({ ...prev, [b.id]: e.target.value }))}
-                style={{ width: 120, padding: 8, background: "#0b1220", color: "white", border: "1px solid #64748b", borderRadius: 6 }} /></label>
+                style={{ width: 120, padding: 8, background: "var(--rl-bg)", color: "white", border: "1px solid var(--rl-faint)", borderRadius: 6 }} /></label>
               <button disabled={busyId !== null} onClick={() => void settle(b, true)} style={{ padding: 10 }}>的中で確定</button>
               <button disabled={busyId !== null} onClick={() => void settle(b, false)} style={{ padding: 10 }}>不的中で確定</button>
             </div>}
-            <div style={{ borderTop: "1px solid #334155", paddingTop: 12, marginTop: 14 }}>
+            <div style={{ borderTop: "1px solid var(--rl-border)", paddingTop: 12, marginTop: 14 }}>
               <strong style={{ color: "#93c5fd" }}>🔬 AI予測との照合</strong>
               {aiError ? (
-                <p style={{ color: "#94a3b8" }}>照合情報を表示できません。結果確定には影響しません。</p>
+                <p style={{ color: "var(--rl-muted)" }}>照合情報を表示できません。結果確定には影響しません。</p>
               ) : !aiByBet[b.id] ? (
-                <p style={{ color: "#94a3b8" }}>照合情報がありません。</p>
+                <p style={{ color: "var(--rl-muted)" }}>照合情報がありません。</p>
               ) : aiByBet[b.id].every(r => r.ai_prediction_id === null) ? (
-                <p style={{ color: "#94a3b8" }}>この買い目に対応するAI予測はありません。</p>
+                <p style={{ color: "var(--rl-muted)" }}>この買い目に対応するAI予測はありません。</p>
               ) : <>
-                <p style={{ color: "#94a3b8", fontSize: 13 }}>
+                <p style={{ color: "var(--rl-muted)", fontSize: 13 }}>
                   購入登録時刻: {formatJst(aiByBet[b.id][0].prediction_registered_at)}（日本時間）
                 </p>
                 {aiByBet[b.id].filter(r => r.ai_prediction_id !== null).map(r => (
-                  <div key={r.ai_prediction_id!} style={{ background: "#0b1220", padding: 12, borderRadius: 8, marginTop: 8 }}>
+                  <div key={r.ai_prediction_id!} style={{ background: "var(--rl-bg)", padding: 12, borderRadius: 8, marginTop: 8 }}>
                     <div style={{ overflowWrap: "anywhere" }}><strong>モデル: {r.model_version ?? "不明"}</strong></div>
                     <div>予測勝率: {r.win_probability === null ? "不明" : `${(r.win_probability * 100).toFixed(2)}%`}
                       {r.odds_at_prediction !== null ? ` ／ AI保存オッズ: ${r.odds_at_prediction}倍` : ""}</div>
@@ -325,15 +325,15 @@ export default function ReviewPage() {
                     {r.ai_timing_status === "POST_REGISTERED" ? (
                       <p style={{ color: "#fbbf24", marginBottom: 0 }}>購入登録後の予測です。購入判断の根拠・期待回収率には使用しません。</p>
                     ) : r.ai_timing_status === "PRE_REGISTERED" ? (
-                      <p style={{ color: "#86efac", marginBottom: 0 }}>
+                      <p style={{ color: "var(--rl-accent-bright)", marginBottom: 0 }}>
                         購入登録以前の予測です。
                         {r.expected_roi_percent !== null ? ` 参考期待回収率: ${Number(r.expected_roi_percent).toFixed(2)}%` : ""}
-                        <span style={{ display: "block", color: "#94a3b8", fontSize: 12 }}>登録時刻を基準にした判定です。実際の購入時刻との一致は未確認です。</span>
+                        <span style={{ display: "block", color: "var(--rl-muted)", fontSize: 12 }}>登録時刻を基準にした判定です。実際の購入時刻との一致は未確認です。</span>
                       </p>
                     ) : null}
                   </div>
                 ))}
-                <p style={{ color: "#94a3b8", fontSize: 12 }}>固定モデルの単勝勝率と期待回収率は推定値です。買い目の実績は人間の予想履歴で集計しています。</p>
+                <p style={{ color: "var(--rl-muted)", fontSize: 12 }}>固定モデルの単勝勝率と期待回収率は推定値です。買い目の実績は人間の予想履歴で集計しています。</p>
               </>}
             </div>
           </section>)}

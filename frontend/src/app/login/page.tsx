@@ -36,8 +36,8 @@ export default function LoginPage() {
   return (
     <main style={{
       minHeight: "100vh",
-      background: "#0b1220",
-      color: "#f8fafc",
+      background: "var(--rl-bg)",
+      color: "var(--rl-text)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -46,13 +46,13 @@ export default function LoginPage() {
       <div style={{
         width: "100%",
         maxWidth: 400,
-        background: "#172338",
+        background: "var(--rl-hover)",
         padding: 32,
         borderRadius: 16,
       }}>
         <h1 style={{ marginBottom: 8 }}>RACE LAB</h1>
         <p style={{
-          color: "#94a3b8",
+          color: "var(--rl-muted)",
           marginBottom: 24,
         }}>
           アカウントにログイン
@@ -75,8 +75,8 @@ export default function LoginPage() {
               padding: 12,
               margin: "8px 0 18px",
               borderRadius: 8,
-              border: "1px solid #475569",
-              background: "#0b1220",
+              border: "1px solid var(--rl-faint)",
+              background: "var(--rl-bg)",
               color: "white",
             }}
           />
@@ -94,8 +94,8 @@ export default function LoginPage() {
               padding: 12,
               margin: "8px 0 24px",
               borderRadius: 8,
-              border: "1px solid #475569",
-              background: "#0b1220",
+              border: "1px solid var(--rl-faint)",
+              background: "var(--rl-bg)",
               color: "white",
             }}
           />
@@ -108,8 +108,8 @@ export default function LoginPage() {
               padding: 14,
               border: 0,
               borderRadius: 8,
-              background: "#34d399",
-              color: "#052e24",
+              background: "var(--rl-accent-bright)",
+              color: "var(--rl-accent-bg)",
               fontWeight: "bold",
               cursor: "pointer",
             }}
@@ -118,16 +118,16 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p style={{ marginTop: 24, color: "#94a3b8", fontSize: 14 }}>
+        <p style={{ marginTop: 24, color: "var(--rl-muted)", fontSize: 14 }}>
           アカウントがない場合は{" "}
-          <Link href="/signup" style={{ color: "#34d399" }}>
+          <Link href="/signup" style={{ color: "var(--rl-accent-bright)" }}>
             新規登録
           </Link>
         </p>
 
         {message && (
           <p role="alert" style={{
-            color: "#f87171",
+            color: "var(--rl-danger-text)",
             marginTop: 16,
           }}>
             {message}

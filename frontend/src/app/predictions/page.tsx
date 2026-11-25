@@ -544,9 +544,9 @@ function handleSportChange(value: Sport) {
     width: "100%",
     padding: 12,
     borderRadius: 8,
-    border: "1px solid #475569",
-    background: "#0b1220",
-    color: "#f8fafc",
+    border: "1px solid var(--rl-faint)",
+    background: "var(--rl-bg)",
+    color: "var(--rl-text)",
     marginTop: 6,
   };
 
@@ -583,8 +583,8 @@ function handleSportChange(value: Sport) {
     <main
       style={{
         minHeight: "100vh",
-        background: "#0b1220",
-        color: "#f8fafc",
+        background: "var(--rl-bg)",
+        color: "var(--rl-text)",
         padding: 24,
       }}
     >
@@ -599,7 +599,7 @@ function handleSportChange(value: Sport) {
 
         <section
           style={{
-            background: "#172338",
+            background: "var(--rl-hover)",
             borderRadius: 16,
             padding: 24,
             marginBottom: 24,
@@ -627,9 +627,9 @@ function handleSportChange(value: Sport) {
             </label>
 
             {sport === "horse" && (
-              <section style={{ background: "#0b1220", border: "1px solid #334155", borderRadius: 12, padding: 16, marginBottom: 20 }}>
+              <section style={{ background: "var(--rl-bg)", border: "1px solid var(--rl-border)", borderRadius: 12, padding: 16, marginBottom: 20 }}>
                 <h3 style={{ margin: "0 0 8px" }}>📅 登録済みレースから選択</h3>
-                <p style={{ color: "#94a3b8", fontSize: 12 }}>選択すると開催日・開催場・レース番号が自動入力されます。手動入力も引き続き使えます。</p>
+                <p style={{ color: "var(--rl-muted)", fontSize: 12 }}>選択すると開催日・開催場・レース番号が自動入力されます。手動入力も引き続き使えます。</p>
                 <select aria-label="登録済みレース" value={selectedRace?.id ?? ""}
                   onChange={(event) => selectRegisteredRace(event.target.value)} style={inputStyle}>
                   <option value="">レースを選択してください</option>
@@ -639,10 +639,10 @@ function handleSportChange(value: Sport) {
                     </option>
                   ))}
                 </select>
-                {racesLoading && <p style={{ color: "#94a3b8" }}>レース一覧を取得中...</p>}
+                {racesLoading && <p style={{ color: "var(--rl-muted)" }}>レース一覧を取得中...</p>}
                 {racesError && <p role="alert" style={{ color: "#fbbf24" }}>{racesError}</p>}
                 {!racesLoading && !racesError && registeredRaces.length === 0 && (
-                  <p style={{ color: "#94a3b8" }}>閲覧できる登録済みレースがありません。</p>
+                  <p style={{ color: "var(--rl-muted)" }}>閲覧できる登録済みレースがありません。</p>
                 )}
                 {selectedRace?.is_test && <p style={{ color: "#fbbf24", fontSize: 12 }}>架空のテストデータです。実戦の成績には含めません。</p>}
               </section>
@@ -696,29 +696,29 @@ function handleSportChange(value: Sport) {
             </label>
 
             {sport === "horse" && venue && (
-              <section style={{ background: "#0b1220", border: "1px solid #334155", borderRadius: 12, padding: 16, marginBottom: 20 }}>
+              <section style={{ background: "var(--rl-bg)", border: "1px solid var(--rl-border)", borderRadius: 12, padding: 16, marginBottom: 20 }}>
                 <h3 style={{ margin: "0 0 8px" }}>🔬 AI予測（固定モデル）</h3>
                 {aiLoading ? <p>AI予測を取得中...</p> : null}
-                {!aiLoading && aiMessage ? <p style={{ color: "#cbd5e1" }}>{aiMessage}</p> : null}
+                {!aiLoading && aiMessage ? <p style={{ color: "var(--rl-sub)" }}>{aiMessage}</p> : null}
                 {!aiLoading && aiPredictions.length > 0 && (
                   <>
-                    <p style={{ fontSize: 12, color: "#94a3b8" }}>
+                    <p style={{ fontSize: 12, color: "var(--rl-muted)" }}>
                       {aiPredictions.length}頭 / モデル: {aiPredictions[0].model_version}
                     </p>
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                        <thead><tr style={{ borderBottom: "1px solid #475569", textAlign: "right" }}>
+                        <thead><tr style={{ borderBottom: "1px solid var(--rl-faint)", textAlign: "right" }}>
                           <th style={{ padding: 8, textAlign: "left" }}>馬番</th><th>勝率</th><th>単勝</th><th>期待回収率</th><th>評価</th><th>選択</th>
                         </tr></thead>
                         <tbody>
                           {aiPredictions.map(row => (
-                            <tr key={row.id} style={{ borderBottom: "1px solid #334155", textAlign: "right" }}>
+                            <tr key={row.id} style={{ borderBottom: "1px solid var(--rl-border)", textAlign: "right" }}>
                               <td style={{ padding: 8, textAlign: "left" }}>{row.horse_number}</td>
                               <td>{(row.win_probability * 100).toFixed(1)}%</td>
                               <td>{row.odds_at_prediction == null ? "－" : row.odds_at_prediction.toFixed(1)}</td>
                               <td>{row.expected_return == null ? "－" : `${(row.expected_return * 100).toFixed(1)}%`}</td>
-                              <td style={{ color: row.recommendation === "BUY" ? "#34d399" : "#cbd5e1" }}>{row.recommendation}</td>
-                              <td><button type="button" onClick={() => applyAiSelection(row)} style={{ background: "#93c5fd", color: "#0b1220", border: 0, borderRadius: 6, padding: "6px 8px", cursor: "pointer" }}>選択</button></td>
+                              <td style={{ color: row.recommendation === "BUY" ? "var(--rl-accent-bright)" : "var(--rl-sub)" }}>{row.recommendation}</td>
+                              <td><button type="button" onClick={() => applyAiSelection(row)} style={{ background: "#93c5fd", color: "var(--rl-bg)", border: 0, borderRadius: 6, padding: "6px 8px", cursor: "pointer" }}>選択</button></td>
                             </tr>
                           ))}
                         </tbody>
@@ -727,7 +727,7 @@ function handleSportChange(value: Sport) {
                     <details style={{ marginTop: 12 }}>
                       <summary style={{ cursor: "pointer" }}>馬ごとのAI評価理由を見る</summary>
                       {aiPredictions.map(row => (
-                        <details key={row.id} style={{ marginTop: 10, padding: 8, borderBottom: "1px solid #334155" }}>
+                        <details key={row.id} style={{ marginTop: 10, padding: 8, borderBottom: "1px solid var(--rl-border)" }}>
                           <summary style={{ cursor: "pointer" }}>{row.horse_number}番（{row.recommendation}）</summary>
                           <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.7, fontSize: 13 }}>{row.reason ?? "理由なし"}</p>
                         </details>
@@ -769,7 +769,7 @@ function handleSportChange(value: Sport) {
                 placeholder={example}
                 style={inputStyle}
               />
-              <small style={{ color: "#94a3b8" }}>
+              <small style={{ color: "var(--rl-muted)" }}>
                 {betType}：{selectedCount}つの番号を入力
               </small>
             </label>
@@ -789,7 +789,7 @@ function handleSportChange(value: Sport) {
             </label>
 
             {selectedAi && (
-              <p style={{ color: "#34d399", fontSize: 13, marginBottom: 12 }}>
+              <p style={{ color: "var(--rl-accent-bright)", fontSize: 13, marginBottom: 12 }}>
                 AI参照中：{selectedAi.horse_number}番 / {selectedAi.model_version}
                 （買い目やオッズを変更すると参照を解除します）
               </p>
@@ -816,8 +816,8 @@ function handleSportChange(value: Sport) {
               style={{
                 width: "100%",
                 padding: 14,
-                background: "#34d399",
-                color: "#052e24",
+                background: "var(--rl-accent-bright)",
+                color: "var(--rl-accent-bg)",
                 border: 0,
                 borderRadius: 8,
                 fontWeight: "bold",
@@ -845,7 +845,7 @@ function handleSportChange(value: Sport) {
           <section
             key={p.id}
             style={{
-              background: "#172338",
+              background: "var(--rl-hover)",
               padding: 20,
               borderRadius: 12,
               marginBottom: 12,
@@ -858,7 +858,7 @@ function handleSportChange(value: Sport) {
 
             <p
               style={{
-                color: "#94a3b8",
+                color: "var(--rl-muted)",
                 marginTop: 8,
               }}
             >
@@ -870,7 +870,7 @@ function handleSportChange(value: Sport) {
             </p>
 
             {p.referenced_ai_prediction_id && p.referenced_ai_model_version === FIXED_MODEL_VERSION && (
-              <p style={{ color: "#34d399", fontSize: 12, marginTop: 8 }}>
+              <p style={{ color: "var(--rl-accent-bright)", fontSize: 12, marginTop: 8 }}>
                 AI参照保存済：{p.referenced_ai_model_version} / 勝率 {p.referenced_ai_win_probability == null ? "－" : (p.referenced_ai_win_probability * 100).toFixed(1) + "%"} / 期待回収率 {p.referenced_ai_expected_return == null ? "－" : (p.referenced_ai_expected_return * 100).toFixed(1) + "%"}
               </p>
             )}
@@ -886,12 +886,12 @@ function handleSportChange(value: Sport) {
                   type="button"
                   disabled={adviceLoadingId !== null}
                   onClick={() => void handleAdvice(p.id)}
-                  style={{ padding: "10px 16px", borderRadius: 8, border: 0, background: "#93c5fd", color: "#0b1220", fontWeight: "bold", cursor: "pointer" }}
+                  style={{ padding: "10px 16px", borderRadius: 8, border: 0, background: "#93c5fd", color: "var(--rl-bg)", fontWeight: "bold", cursor: "pointer" }}
                 >
                   {adviceLoadingId === p.id ? "AI評価中..." : "AIにこの買い目を評価させる"}
                 </button>
                 {adviceById[p.id] && (
-                  <p role="status" style={{ whiteSpace: "pre-wrap", marginTop: 12, lineHeight: 1.7, color: "#e2e8f0" }}>
+                  <p role="status" style={{ whiteSpace: "pre-wrap", marginTop: 12, lineHeight: 1.7, color: "var(--rl-text)" }}>
                     {adviceById[p.id]}
                   </p>
                 )}
@@ -901,7 +901,7 @@ function handleSportChange(value: Sport) {
         ))}
 
         {predictions.length === 0 && (
-          <p style={{ color: "#94a3b8" }}>
+          <p style={{ color: "var(--rl-muted)" }}>
             まだ予想がありません。
           </p>
         )}

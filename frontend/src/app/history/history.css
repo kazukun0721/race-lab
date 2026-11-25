@@ -380,7 +380,7 @@
 @media (max-width:900px){.rh-analysis-grid{grid-template-columns:1fr}}
 .rh-metrics-row td{padding:4px 16px 8px;font-size:11px;color:var(--rh-label);background:var(--rh-metrics-bg);white-space:normal;line-height:1.7}
 
-.rh-root.rh-light{
+:root[data-theme="light"] .rh-root{
   --rh-bg:#f4f6f9;
   --rh-text:#16233a;
   --rh-panel:#ffffff;

@@ -77,8 +77,8 @@ export default function SetupPasswordPage() {
   return (
     <main style={{
       minHeight: "100vh",
-      background: "#0b1220",
-      color: "#f8fafc",
+      background: "var(--rl-bg)",
+      color: "var(--rl-text)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -87,12 +87,12 @@ export default function SetupPasswordPage() {
       <div style={{
         width: "100%",
         maxWidth: 400,
-        background: "#172338",
+        background: "var(--rl-hover)",
         padding: 32,
         borderRadius: 16,
       }}>
         <h1>RACE LAB</h1>
-        <p style={{ color: "#94a3b8", marginBottom: 24 }}>
+        <p style={{ color: "var(--rl-muted)", marginBottom: 24 }}>
           初回パスワード設定
         </p>
 
@@ -146,8 +146,8 @@ export default function SetupPasswordPage() {
                 padding: 14,
                 border: 0,
                 borderRadius: 8,
-                background: "#34d399",
-                color: "#052e24",
+                background: "var(--rl-accent-bright)",
+                color: "var(--rl-accent-bg)",
                 fontWeight: "bold",
                 cursor: "pointer",
               }}
@@ -159,7 +159,7 @@ export default function SetupPasswordPage() {
 
         {message && (
           <p role="alert" style={{
-            color: "#f87171",
+            color: "var(--rl-danger-text)",
             marginTop: 16,
           }}>
             {message}
