@@ -128,6 +128,8 @@ export default function PredictionsPage() {
   const [myPredictions, setMyPredictions] = useState<Prediction[]>([]);
   const [adviceLoadingId, setAdviceLoadingId] = useState<string | null>(null);
   const [adviceById, setAdviceById] = useState<Record<string, string>>({});
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadMyPredictions = useCallback(async () => {
     const { data, error: dbError } = await supabase
@@ -375,6 +377,23 @@ export default function PredictionsPage() {
     }
   }
 
+  async function handleDelete(p: Prediction) {
+    if (confirmDeleteId !== p.id) {
+      setConfirmDeleteId(p.id);
+      return;
+    }
+    setConfirmDeleteId(null);
+    setDeletingId(p.id);
+    const { error: deleteError } = await supabase.from("predictions").delete().eq("id", p.id);
+    setDeletingId(null);
+    if (deleteError) {
+      setMessage("削除エラー: " + deleteError.message);
+    } else {
+      setMyPredictions(prev => prev.filter(item => item.id !== p.id));
+      setMessage("予想を削除しました。");
+    }
+  }
+
   async function handleAdvice(predictionId: string) {
     if (adviceLoadingId) return;
     setAdviceLoadingId(predictionId);
@@ -422,7 +441,13 @@ export default function PredictionsPage() {
       <section key={p.id} className="predcard">
         <div className="predhead">
           <strong>{p.venue} {p.race_number}R</strong>
-          <span className="muted">{p.race_date} / {p.bet_type}</span>
+          <span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
+            <span className="muted">{p.race_date} / {p.bet_type}</span>
+            <button type="button" className={confirmDeleteId === p.id ? "delbtn confirm" : "delbtn"}
+              disabled={deletingId !== null} onClick={() => void handleDelete(p)}>
+              {deletingId === p.id ? "削除中..." : confirmDeleteId === p.id ? "本当に削除する" : "削除"}
+            </button>
+          </span>
         </div>
         <p className="predsel">買い目：{p.selection.split("-").map(part => {
           const n = Number(part);
@@ -466,7 +491,7 @@ export default function PredictionsPage() {
         .rl-pred .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}.rl-pred .numinput{width:100%;padding:12px;background:var(--rl-bg);color:var(--rl-text);border:1px solid var(--rl-border);border-radius:8px;margin-top:6px}
         .rl-pred .primary{background:var(--green);color:var(--rl-accent-bg);padding:14px 17px;border-radius:8px;font-weight:900;font-size:13px;border:0;width:100%;margin-top:18px}.rl-pred .primary:disabled{opacity:.55;cursor:wait}
         .rl-pred .notice{border:1px solid var(--rl-accent-bg);background:var(--rl-panel);border-radius:10px;padding:14px 18px;color:var(--rl-accent-bright);font-size:12px;margin-top:18px}.rl-pred .alert{border-color:var(--rl-danger-border);background:var(--rl-panel);color:var(--rl-danger-text)}
-        .rl-pred .airef{color:var(--rl-accent-bright);font-size:12px}.rl-pred .predcard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:18px;margin-bottom:12px}.rl-pred .predhead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.rl-pred .predsel{font-weight:800;margin-top:8px}.rl-pred .advicetext{white-space:pre-wrap;margin-top:12px;line-height:1.7}
+        .rl-pred .airef{color:var(--rl-accent-bright);font-size:12px}.rl-pred .delbtn{border:1px solid var(--rl-border);background:transparent;color:var(--rl-muted);border-radius:6px;padding:5px 9px;font-size:11px}.rl-pred .delbtn.confirm{border-color:var(--rl-danger-border);color:var(--rl-danger-text);font-weight:800}.rl-pred .predcard{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:18px;margin-bottom:12px}.rl-pred .predhead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.rl-pred .predsel{font-weight:800;margin-top:8px}.rl-pred .advicetext{white-space:pre-wrap;margin-top:12px;line-height:1.7}
         .rl-pred .mobilemenu{display:none}.rl-pred .empty{padding:34px;text-align:center;color:var(--rl-muted)}
         @media(max-width:1050px){.rl-pred .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.rl-pred .content{padding:28px 22px 60px}}
         @media(max-width:720px){.rl-pred .side{display:none;width:230px}.rl-pred .side.open{display:block}.rl-pred .workspace{margin-left:0}.rl-pred .topbar{padding:0 18px}.rl-pred .mobilemenu{display:inline-flex;border:1px solid var(--rl-border);background:var(--rl-hover);color:var(--rl-accent-bright);border-radius:7px;padding:8px 12px}.rl-pred .content{padding:25px 15px 50px}.rl-pred h1{font-size:27px}.rl-pred .panel{padding:15px}.rl-pred .formgrid{grid-template-columns:1fr}.rl-pred .metrics{gap:8px}.rl-pred .metric{padding:13px}.rl-pred .metric .v{font-size:19px}}
