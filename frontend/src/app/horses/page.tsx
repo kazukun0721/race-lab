@@ -68,24 +68,31 @@ function Pedigree({ horse, slots, recorded }: { horse: string; slots: PedigreeSl
     return Array.from({ length: 2 ** depth }, (_, slot) =>
       slot.toString(2).padStart(depth,"0").replaceAll("0","S").replaceAll("1","D"));
   });
+  const renderGeneration = (generation: string[], index: number) => <section key={index}>
+    <h3>{index+1}代</h3>
+    <ul>{generation.map((path) => {
+      const row = byPath.get(path);
+      const alternative = direct.get(path);
+      return <li key={path}>
+        <small>{ancestryPath(path)}</small>
+        <span>{row ? ancestorName(row,{from:horse,ancestry:path}) : "収録なし"}</span>
+        {row?.breeding_id && <small>繁殖登録番号 {row.breeding_id} · {racehorseStatus(row)}</small>}
+        {alternative?.breeding_id && alternative.breeding_id !== row?.breeding_id &&
+          <small>馬マスタ（UM）記載 {ancestorName(alternative,{from:horse,ancestry:path})}
+            {" · "}{alternative.breeding_id} · {racehorseStatus(alternative)}</small>}
+      </li>;
+    })}</ul>
+  </section>;
   return <div className={styles.tableScroll} tabIndex={0} role="region" aria-label="5世代血統">
-    <div className={styles.generations}>
-      {generations.map((generation,index) => <section key={index}>
-        <h3>{index+1}代</h3>
-        <ul>{generation.map((path) => {
-          const row = byPath.get(path);
-          const alternative = direct.get(path);
-          return <li key={path}>
-            <small>{ancestryPath(path)}</small>
-            <span>{row ? ancestorName(row,{from:horse,ancestry:path}) : "収録なし"}</span>
-            {row?.breeding_id && <small>繁殖登録番号 {row.breeding_id} · {racehorseStatus(row)}</small>}
-            {alternative?.breeding_id && alternative.breeding_id !== row?.breeding_id &&
-              <small>馬マスタ（UM）記載 {ancestorName(alternative,{from:horse,ancestry:path})}
-                {" · "}{alternative.breeding_id} · {racehorseStatus(alternative)}</small>}
-          </li>;
-        })}</ul>
-      </section>)}
+    <div className={`${styles.generations} ${styles.gen2}`}>
+      {generations.slice(0, 2).map((generation, index) => renderGeneration(generation, index))}
     </div>
+    <details className={styles.pedigreeMore}>
+      <summary>3代以降の血統を表示（3代・4代・5代）</summary>
+      <div className={`${styles.generations} ${styles.gen3}`}>
+        {generations.slice(2).map((generation, index) => renderGeneration(generation, index + 2))}
+      </div>
+    </details>
   </div>;
 }
 

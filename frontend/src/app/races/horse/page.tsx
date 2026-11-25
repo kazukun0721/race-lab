@@ -53,6 +53,15 @@ type AiPrediction = {
   model_version: string;
 };
 
+type FormItem = {
+  race_id: string; date: string; venue: string; race_number: number;
+  race_name: string | null; surface: string | null; distance: number | null;
+  going: string | null; starters: number | null; horse_number: number | null;
+  finish: number | null; jockey: string | null; carried_weight: number | null;
+  time: string | null; popularity: number | null; win_odds: number | null;
+  last3f: string | null; margin: string | null; passing: string | null;
+};
+
 const venueOrder = ["東京", "中山", "京都", "阪神", "中京", "新潟", "福島", "小倉", "札幌", "函館"];
 
 
@@ -69,6 +78,8 @@ export default function HorseRacesPage() {
   const [oddsType, setOddsType] = useState<"単勝" | "複勝">("単勝");
   const [sortBy, setSortBy] = useState<"number" | "market" | "model" | "ev">("number");
   const [expandedHorse, setExpandedHorse] = useState<number | null>(null);
+  const [formByHorse, setFormByHorse] = useState<Record<string, FormItem[]>>({});
+  const [formState, setFormState] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [loadingList, setLoadingList] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState("");
@@ -160,6 +171,21 @@ export default function HorseRacesPage() {
     return () => { active = false; window.clearInterval(timer); };
   }, [selectedRace?.id]);
 
+  useEffect(() => {
+    if (!detail) { setFormByHorse({}); setFormState("idle"); return; }
+    const ids = [...new Set(detail.horse_entries
+      .filter(h => h.entry_status === "entered" && h.horse_id && /^\d{10}$/.test(h.horse_id))
+      .map(h => h.horse_id as string))];
+    if (ids.length === 0) { setFormByHorse({}); setFormState("idle"); return; }
+    let active = true;
+    setFormState("loading");
+    fetch(`/api/horse-form?ids=${ids.join(",")}&before=${detail.race_date}`, { cache: "no-store" })
+      .then(async res => { if (!res.ok) throw new Error("form fetch failed"); return res.json(); })
+      .then(body => { if (active) { setFormByHorse(body as Record<string, FormItem[]>); setFormState("ok"); } })
+      .catch(() => { if (active) { setFormByHorse({}); setFormState("error"); } });
+    return () => { active = false; };
+  }, [detail?.id]);
+
   const [mobileNav, setMobileNav] = useState(false);
   const { marks, cycleMark, marksStatus, marksNote } = usePredictionMarks(detail?.id ?? null);
   const latestOddsTime = detail?.horse_odds.filter(o => o.bet_type === oddsType)
@@ -204,6 +230,9 @@ export default function HorseRacesPage() {
   const showPopularity = entryRows.some(r => r.horse.popularity !== null);
   const showMarket = entryRows.some(r => r.market !== null);
   const showEv = entryRows.some(r => r.ev !== null);
+  const formLabels = ["前走", "2走前", "3走前", "4走前", "5走前"];
+  const formCols = formState === "ok"
+    ? Math.max(1, Math.min(5, Math.max(0, ...Object.values(formByHorse).map(v => v.length)))) : 0;
   const nav = [
     { href: "/", label: "ダッシュボード", symbol: "⌂" },
     { href: "/races/auto", label: "レース一覧", symbol: "▤" },
@@ -227,7 +256,7 @@ export default function HorseRacesPage() {
         .rl-horse .chips{display:flex;flex-wrap:wrap;gap:8px}.rl-horse .chip{background:var(--rl-hover);color:var(--rl-text);border:1px solid var(--rl-border);padding:11px 15px;border-radius:8px;font-weight:800;font-size:12px}.rl-horse .chip.on{background:var(--green);color:var(--rl-accent-bg);border-color:var(--green)}
         .rl-horse .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}.rl-horse .metric{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}.rl-horse .metric .k{color:var(--rl-sub);font-size:10px;letter-spacing:1px;font-weight:800}.rl-horse .metric .v{font-size:23px;font-weight:900;margin-top:12px}.rl-horse .metric .v.small{font-size:14px}
         .rl-horse .toolbar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin:15px 0}.rl-horse .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.rl-horse table{border-collapse:collapse;width:100%;min-width:1050px}.rl-horse th{text-align:left;color:var(--rl-muted);background:var(--rl-panel);font-size:11px;padding:15px 12px;border-bottom:1px solid var(--line);white-space:nowrap}.rl-horse td{padding:15px 12px;border-bottom:1px solid var(--rl-border);font-size:12px;vertical-align:middle}.rl-horse tr:last-child td{border-bottom:0}.rl-horse tbody tr:hover{background:var(--rl-hover)}.rl-horse .horse{font-weight:800;color:var(--rl-text)}.rl-horse .number{font-weight:900;color:var(--green)}.rl-horse .muted{color:var(--rl-muted)}.rl-horse .detailbtn{border:1px solid var(--rl-border);background:var(--rl-hover);color:var(--rl-accent-bright);border-radius:6px;padding:7px 9px;margin-top:5px;font-size:11px}.rl-horse .detailtext{white-space:pre-wrap;max-width:230px;line-height:1.6;margin-top:8px;color:var(--rl-sub)}
-        .rl-horse .markbtn2{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;border:2px solid var(--rl-border);background:transparent;color:var(--rl-muted);font-size:17px;font-weight:900;line-height:1;padding:0}.rl-horse .markbtn2:disabled{opacity:.45}.rl-horse .markbtn2.m-primary{border-color:#e5484d;color:#e5484d;background:rgba(229,72,77,.13)}.rl-horse .markbtn2.m-secondary{border-color:#4c9aff;color:#4c9aff;background:rgba(76,154,255,.13)}.rl-horse .markbtn2.m-third{border-color:#30a46c;color:#30a46c;background:rgba(48,164,108,.13)}.rl-horse .markbtn2.m-attention{border-color:#f5a524;color:#f5a524;background:rgba(245,165,36,.13)}.rl-horse .notice{border:1px solid var(--rl-accent-bg);background:var(--rl-panel);border-radius:10px;padding:14px 18px;color:var(--rl-accent-bright);font-size:12px;margin-top:18px}.rl-horse .alert{border-color:var(--rl-danger-border);background:var(--rl-panel);color:var(--rl-danger-text)}.rl-horse .primary{background:var(--green);color:var(--rl-accent-bg);padding:12px 17px;border-radius:8px;font-weight:900;font-size:12px;display:inline-block}
+        .rl-horse .markbtn2{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;border:2px solid var(--rl-border);background:transparent;color:var(--rl-muted);font-size:17px;font-weight:900;line-height:1;padding:0}.rl-horse .markbtn2:disabled{opacity:.45}.rl-horse .markbtn2.m-primary{border-color:#e5484d;color:#e5484d;background:rgba(229,72,77,.13)}.rl-horse .markbtn2.m-secondary{border-color:#4c9aff;color:#4c9aff;background:rgba(76,154,255,.13)}.rl-horse .markbtn2.m-third{border-color:#30a46c;color:#30a46c;background:rgba(48,164,108,.13)}.rl-horse .markbtn2.m-attention{border-color:#f5a524;color:#f5a524;background:rgba(245,165,36,.13)}.rl-horse .formcell{min-width:118px;vertical-align:top}.rl-horse .formdate{font-weight:800;font-size:11px;white-space:nowrap}.rl-horse .formname{font-size:10px;color:var(--rl-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:132px}.rl-horse .formfinish{font-size:17px;font-weight:900}.rl-horse .formfinish.f1{color:#e5484d}.rl-horse .formfinish.f2{color:#4c9aff}.rl-horse .formfinish.f3{color:#30a46c}.rl-horse .formcell .muted{font-size:10px}.rl-horse .notice{border:1px solid var(--rl-accent-bg);background:var(--rl-panel);border-radius:10px;padding:14px 18px;color:var(--rl-accent-bright);font-size:12px;margin-top:18px}.rl-horse .alert{border-color:var(--rl-danger-border);background:var(--rl-panel);color:var(--rl-danger-text)}.rl-horse .primary{background:var(--green);color:var(--rl-accent-bg);padding:12px 17px;border-radius:8px;font-weight:900;font-size:12px;display:inline-block}
         .rl-horse .mobilemenu{display:none}.rl-horse .empty{padding:34px;text-align:center;color:var(--rl-muted)}
         @media(max-width:1050px){.rl-horse .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.rl-horse .content{padding:28px 22px 60px}}
         @media(max-width:720px){.rl-horse .side{display:none;width:230px}.rl-horse .side.open{display:block}.rl-horse .workspace{margin-left:0}.rl-horse .topbar{padding:0 18px}.rl-horse .mobilemenu{display:inline-flex;border:1px solid var(--rl-border);background:var(--rl-hover);color:var(--rl-accent-bright);border-radius:7px;padding:8px 12px}.rl-horse .content{padding:25px 15px 50px}.rl-horse h1{font-size:27px}.rl-horse .panel{padding:15px}.rl-horse .selectors{gap:16px}.rl-horse .metrics{gap:8px}.rl-horse .metric{padding:13px}.rl-horse .metric .v{font-size:19px}}
@@ -276,8 +305,8 @@ export default function HorseRacesPage() {
             <div className="toolbar"><div className="chips">{(["単勝", "複勝"] as const).map(t => <button key={t} className={`chip ${oddsType === t ? "on" : ""}`} onClick={() => setOddsType(t)}>{t}オッズ</button>)}</div><label>並び順 <select value={sortBy} onChange={event => setSortBy(event.target.value as typeof sortBy)}>
               <option value="number">馬番</option><option value="model">固定モデル勝率</option>
               <option value="market">市場推定勝率</option><option value="ev">期待回収率</option>
-            </select></label>{marksNote && <span className="sub" role="status">{marksNote}</span>}</div>
-            <div className="tablewrap"><table><thead><tr>{["枠", "馬番", "印", "馬名", "性齢", "騎手", "斤量", `${oddsType}オッズ`, ...(showPopularity ? ["人気"] : []), "固定モデル勝率", ...(showMarket ? ["市場推定勝率"] : []), ...(showEv ? ["期待回収率"] : []), "AI評価 / 分析"].map(h => <th key={h}>{h}</th>)}</tr></thead><tbody>
+            </select></label>{marksNote && <span className="sub" role="status">{marksNote}</span>}{formState === "loading" && <span className="sub">近走データを取得中…</span>}{formState === "error" && <span className="sub">近走データを取得できませんでした（PC接続が必要です）</span>}</div>
+            <div className="tablewrap"><table><thead><tr>{["枠", "馬番", "印", "馬名", "性齢", "騎手", "斤量", `${oddsType}オッズ`, ...(showPopularity ? ["人気"] : []), "固定モデル勝率", ...(showMarket ? ["市場推定勝率"] : []), ...(showEv ? ["期待回収率"] : []), "AI評価 / 分析", ...(formCols > 0 ? formLabels.slice(0, formCols) : [])].map(h => <th key={h}>{h}</th>)}</tr></thead><tbody>
               {entryRows.map(({ horse: h, pred, market, ev }) => {
                 const odds = detail.horse_odds.filter(o => o.bet_type === oddsType && Number(o.selection) === h.horse_number)
                   .sort((a,b) => Date.parse(b.fetched_at) - Date.parse(a.fetched_at))[0];
@@ -286,7 +315,7 @@ export default function HorseRacesPage() {
                 return <tr key={h.id}><td>{h.bracket_number ?? "-"}</td><td className="number">{h.horse_number ?? "未定"}</td><td>{h.entry_status === "entered" && h.horse_number !== null ? <button type="button" className={`markbtn2 m-${mark}`} disabled={marksStatus !== "ready"} aria-label={`${h.horse_number}番の予想印：${MARK_LABELS[mark]}（押すたびに切り替わります）`} title={MARK_LABELS[mark]} onClick={() => void cycleMark(h.horse_number!)}><MarkIcon mark={mark} /></button> : <span className="muted">―</span>}</td><td><div className="horse">{h.horse_id && /^\d{10}$/.test(h.horse_id) ? <a href={`/horses?horse=${h.horse_id}`}>{h.horse_name} ↗</a> : h.horse_name}</div>{h.entry_status !== "entered" && <div style={{ color: "var(--rl-danger-text)", fontSize: 11 }}>{h.entry_status === "scratched" ? "出走取消" : "競走除外"}</div>}</td><td>{h.horse_sex ?? ""}{h.horse_age ?? ""}</td><td>{h.jockey_name ?? "-"}</td><td>{h.carried_weight ?? "-"}</td><td>{oddsText}</td>{showPopularity && <td>{h.popularity ?? "-"}</td>}<td>{pred?.win_probability != null ? `${(pred.win_probability * 100).toFixed(1)}%` : "-"}</td>{showMarket && <td>{market == null ? "-" : `${(market * 100).toFixed(1)}%`}</td>}{showEv && <td>{ev == null ? "-" : `${(ev * 100).toFixed(1)}%`}</td>}<td>{predictionError ? "固定予測の取得に失敗" : !pred ? "固定予測未登録" : pred.win_probability === null ? "予測値なし" : pred.recommendation ?? "固定予測あり"}
                   {h.entry_status === "entered" && market === null && <div className="sub">市場確率の算出に必要なオッズが不足</div>}
                   {h.horse_id && /^\d{10}$/.test(h.horse_id) && <div><a href={`/horses?analysis=${h.horse_id}`}>過去の条件別成績 ↗</a></div>}
-                  {pred && <><div><button className="detailbtn" onClick={() => setExpandedHorse(expandedHorse === h.horse_number ? null : h.horse_number)} aria-expanded={expandedHorse === h.horse_number}>{expandedHorse === h.horse_number ? "分析を閉じる" : "AI分析を見る"}</button></div>{expandedHorse === h.horse_number && <div className="detailtext" style={{ whiteSpace: "pre-wrap" }}>{pred.reason ?? "分析理由は未登録です。"}<div style={{ marginTop: 6 }}>モデル：{pred.model_version}</div></div>}</>}</td></tr>;
+                  {pred && <><div><button className="detailbtn" onClick={() => setExpandedHorse(expandedHorse === h.horse_number ? null : h.horse_number)} aria-expanded={expandedHorse === h.horse_number}>{expandedHorse === h.horse_number ? "分析を閉じる" : "AI分析を見る"}</button></div>{expandedHorse === h.horse_number && <div className="detailtext" style={{ whiteSpace: "pre-wrap" }}>{pred.reason ?? "分析理由は未登録です。"}<div style={{ marginTop: 6 }}>モデル：{pred.model_version}</div></div>}</>}</td>{formCols > 0 && Array.from({ length: formCols }, (_, i) => { const item = h.horse_id ? formByHorse[h.horse_id]?.[i] : undefined; return (<td key={i} className="formcell">{item ? <><div className="formdate">{item.date.slice(5).replace("-", "/")} {item.venue}{item.race_number}R</div>{item.race_name && <div className="formname">{item.race_name}</div>}<div><span className={`formfinish ${item.finish !== null && item.finish <= 3 ? "f" + item.finish : ""}`}>{item.finish ?? "―"}</span><span className="muted"> 着 / {item.starters ?? "?"}頭 {item.horse_number ?? "?"}番</span></div><div className="muted">{item.surface ?? ""}{item.distance ?? ""} {item.going ?? ""} {item.time ?? ""}</div><div className="muted">{item.jockey ?? ""}{item.carried_weight ? ` ${item.carried_weight.toFixed(1)}` : ""}{item.popularity ? ` / ${item.popularity}番人気` : ""}</div>{(item.passing || item.last3f || item.margin) && <div className="muted">{item.passing ?? ""}{item.last3f ? ` 上${item.last3f}` : ""}{item.margin ? ` / 着差${item.margin}` : ""}</div>}</> : <span className="muted">{i === 0 && h.horse_id ? "初出走" : "―"}</span>}</td>); })}</tr>;
               })}
             </tbody></table>{detail.horse_entries.length === 0 && <div className="empty">出走馬はまだ登録されていません。</div>}</div>
             <div className="notice">データは表示中のレースについて60秒ごとに再取得します。市場推定勝率は同一時刻の単勝オッズが全出走馬で揃った場合に表示します。期待回収率は固定モデル勝率と取得オッズから求める推定値です。</div>
