@@ -125,9 +125,9 @@ export default function AutoRacesPage() {
               <div style={panel}>
                 {horses.some(h=>h.number==null)&&<div style={{padding:"14px 18px",color:"#f6ca76",fontSize:12,borderBottom:"1px solid var(--rl-border)"}}>馬番が未確定の馬は「未定」と表示しています。</div>}
                 <div className="rl466-tablehead"><span>馬番</span><span>馬名</span><span>AI予測</span></div>
-                {horses.length===0?<div style={{padding:22,color:muted}}>出走馬データは未登録です。</div>:horses.map((h,i)=><div className="rl466-horserow" key={`${selectedRace.race_id}-${i}`}><span style={{fontWeight:800,color:green}}>{h.number==null?"未定":`${h.number}番`}</span><span style={{fontWeight:700,overflowWrap:"anywhere"}}>{h.name}</span><span style={{fontSize:12,color:muted}}>別画面で確認</span></div>)}
+                {horses.length===0?<div style={{padding:22,color:muted}}>出走馬データは未登録です。</div>:horses.map((h,i)=><div className="rl466-horserow" key={`${selectedRace.race_id}-${i}`}><span style={{fontWeight:800,color:green}}>{h.number==null?"未定":`${h.number}番`}</span><span style={{fontWeight:700,overflowWrap:"anywhere"}}>{h.name}</span><Link href={`/races/horse?date=${selectedRace.date}&venue=${encodeURIComponent(selectedRace.venue)}&race=${selectedRace.race_number}`} style={{fontSize:12,color:green}}>このレースで確認 ↗</Link></div>)}
               </div>
-              <div style={{marginTop:20,display:"flex",justifyContent:"flex-end"}}><Link className="rl466-action" href="/races/horse">AI予測・オッズ画面へ　↗</Link></div>
+              <div style={{marginTop:20,display:"flex",justifyContent:"flex-end"}}><Link className="rl466-action" href={`/races/horse?date=${selectedRace.date}&venue=${encodeURIComponent(selectedRace.venue)}&race=${selectedRace.race_number}`}>AI予測・出馬表へ　↗</Link></div>
             </section>}
             <div style={{marginTop:42,fontSize:11,color:"var(--rl-faint)"}}>RACE LAB / PRIVATE INTELLIGENCE PLATFORM</div>
           </div>

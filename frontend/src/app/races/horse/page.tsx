@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RacePredictionMarks } from "@/components/RacePredictionMarks";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -82,6 +82,7 @@ export default function HorseRacesPage() {
       if (!user) { router.replace("/login"); return; }
       const { data, error: dbError } = await supabase.from("horse_races")
         .select("id,race_date,venue,race_number,race_name")
+        .eq("is_test", false)
         .order("race_date", { ascending: false })
         .order("race_number", { ascending: true })
         .limit(500);
@@ -93,6 +94,24 @@ export default function HorseRacesPage() {
     void loadList();
     return () => { active = false; };
   }, [router]);
+
+  const pendingRef = useRef<{ date?: string; venue?: string; race?: number }>({});
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    pendingRef.current = {
+      date: q.get("date") ?? undefined,
+      venue: q.get("venue") ?? undefined,
+      race: q.get("race") ? Number(q.get("race")) : undefined,
+    };
+  }, []);
+  useEffect(() => {
+    const p = pendingRef.current;
+    if (!races.length || (!p.date && !p.venue && !p.race)) return;
+    if (p.date) setDate(p.date);
+    if (p.venue) setVenue(p.venue);
+    if (p.race) setRaceNumber(p.race);
+    pendingRef.current = {};
+  }, [races]);
 
   const dates = useMemo(() => [...new Set(races.map(r => r.race_date))].sort().reverse(), [races]);
   const selectedDate = dates.includes(date) ? date : (dates[0] ?? "");
@@ -181,6 +200,9 @@ export default function HorseRacesPage() {
     const [x,y] = values[sortBy];
     return ((y ?? -1) - (x ?? -1)) || (a.horse.horse_number ?? 999) - (b.horse.horse_number ?? 999);
   });
+  const showPopularity = entryRows.some(r => r.horse.popularity !== null);
+  const showMarket = entryRows.some(r => r.market !== null);
+  const showEv = entryRows.some(r => r.ev !== null);
   const nav = [
     { href: "/", label: "ダッシュボード", symbol: "⌂" },
     { href: "/races/auto", label: "レース一覧", symbol: "▤" },
@@ -259,12 +281,12 @@ export default function HorseRacesPage() {
               <option value="number">馬番</option><option value="model">固定モデル勝率</option>
               <option value="market">市場推定勝率</option><option value="ev">期待回収率</option>
             </select></label></div>
-            <div className="tablewrap"><table><thead><tr>{["枠", "馬番", "馬名", "性齢", "騎手", "斤量", `${oddsType}オッズ`, "人気", "固定モデル勝率", "市場推定勝率", "期待回収率", "AI評価 / 分析"].map(h => <th key={h}>{h}</th>)}</tr></thead><tbody>
+            <div className="tablewrap"><table><thead><tr>{["枠", "馬番", "馬名", "性齢", "騎手", "斤量", `${oddsType}オッズ`, ...(showPopularity ? ["人気"] : []), "固定モデル勝率", ...(showMarket ? ["市場推定勝率"] : []), ...(showEv ? ["期待回収率"] : []), "AI評価 / 分析"].map(h => <th key={h}>{h}</th>)}</tr></thead><tbody>
               {entryRows.map(({ horse: h, pred, market, ev }) => {
                 const odds = detail.horse_odds.filter(o => o.bet_type === oddsType && Number(o.selection) === h.horse_number)
                   .sort((a,b) => Date.parse(b.fetched_at) - Date.parse(a.fetched_at))[0];
                 const oddsText = h.entry_status !== "entered" ? "発売対象外" : !odds || odds.odds_status !== "available" ? "未取得" : oddsType === "複勝" && odds.odds_max != null ? `${Number(odds.odds).toFixed(1)}〜${Number(odds.odds_max).toFixed(1)}` : Number(odds.odds).toFixed(1);
-                return <tr key={h.id}><td>{h.bracket_number ?? "-"}</td><td className="number">{h.horse_number ?? "未定"}</td><td><div className="horse">{h.horse_id && /^\d{10}$/.test(h.horse_id) ? <a href={`/horses?horse=${h.horse_id}`}>{h.horse_name} ↗</a> : h.horse_name}</div>{h.entry_status !== "entered" && <div style={{ color: "var(--rl-danger-text)", fontSize: 11 }}>{h.entry_status === "scratched" ? "出走取消" : "競走除外"}</div>}</td><td>{h.horse_sex ?? ""}{h.horse_age ?? ""}</td><td>{h.jockey_name ?? "-"}</td><td>{h.carried_weight ?? "-"}</td><td>{oddsText}</td><td>{h.popularity ?? "-"}</td><td>{pred?.win_probability != null ? `${(pred.win_probability * 100).toFixed(1)}%` : "-"}</td><td>{market == null ? "-" : `${(market * 100).toFixed(1)}%`}</td><td>{ev == null ? "-" : `${(ev * 100).toFixed(1)}%`}</td><td>{predictionError ? "固定予測の取得に失敗" : !pred ? "固定予測未登録" : pred.win_probability === null ? "予測値なし" : pred.recommendation ?? "固定予測あり"}
+                return <tr key={h.id}><td>{h.bracket_number ?? "-"}</td><td className="number">{h.horse_number ?? "未定"}</td><td><div className="horse">{h.horse_id && /^\d{10}$/.test(h.horse_id) ? <a href={`/horses?horse=${h.horse_id}`}>{h.horse_name} ↗</a> : h.horse_name}</div>{h.entry_status !== "entered" && <div style={{ color: "var(--rl-danger-text)", fontSize: 11 }}>{h.entry_status === "scratched" ? "出走取消" : "競走除外"}</div>}</td><td>{h.horse_sex ?? ""}{h.horse_age ?? ""}</td><td>{h.jockey_name ?? "-"}</td><td>{h.carried_weight ?? "-"}</td><td>{oddsText}</td>{showPopularity && <td>{h.popularity ?? "-"}</td>}<td>{pred?.win_probability != null ? `${(pred.win_probability * 100).toFixed(1)}%` : "-"}</td>{showMarket && <td>{market == null ? "-" : `${(market * 100).toFixed(1)}%`}</td>}{showEv && <td>{ev == null ? "-" : `${(ev * 100).toFixed(1)}%`}</td>}<td>{predictionError ? "固定予測の取得に失敗" : !pred ? "固定予測未登録" : pred.win_probability === null ? "予測値なし" : pred.recommendation ?? "固定予測あり"}
                   {h.entry_status === "entered" && market === null && <div className="sub">市場確率の算出に必要なオッズが不足</div>}
                   {h.horse_id && /^\d{10}$/.test(h.horse_id) && <div><a href={`/horses?analysis=${h.horse_id}`}>過去の条件別成績 ↗</a></div>}
                   {pred && <><div><button className="detailbtn" onClick={() => setExpandedHorse(expandedHorse === h.horse_number ? null : h.horse_number)} aria-expanded={expandedHorse === h.horse_number}>{expandedHorse === h.horse_number ? "分析を閉じる" : "AI分析を見る"}</button></div>{expandedHorse === h.horse_number && <div className="detailtext" style={{ whiteSpace: "pre-wrap" }}>{pred.reason ?? "分析理由は未登録です。"}<div style={{ marginTop: 6 }}>モデル：{pred.model_version}</div></div>}</>}</td></tr>;
