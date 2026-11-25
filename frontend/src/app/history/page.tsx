@@ -245,6 +245,174 @@ function HorseAnalysis({ history }: { history: HorseHistory[] }) {
   );
 }
 
+
+type FinishedRun = HorseHistory & { finish_position: number };
+
+function isFinished(h: HorseHistory): h is FinishedRun {
+  return h.finish_position !== null && h.finish_position > 0;
+}
+
+function HorseTrendChart({ history }: { history: HorseHistory[] }) {
+  const runs = history.filter(isFinished).slice().reverse().slice(-30);
+  if (runs.length < 2) return null;
+
+  const W = 720, H = 232, PL = 34, PR = 14, PT = 18, PB = 30;
+  const maxFinish = Math.max(10, ...runs.map(r => r.finish_position));
+  const x = (i: number) => PL + (i * (W - PL - PR)) / (runs.length - 1);
+  const y = (f: number) => PT + ((f - 1) * (H - PT - PB)) / (maxFinish - 1);
+  const line = runs.map((r, i) => `${x(i)},${y(r.finish_position)}`).join(" ");
+  const gridVals = [1, 3, 5, 10, 15, 18].filter(v => v <= maxFinish);
+  const dotColor = (f: number) =>
+    f === 1 ? "#e5484d" : f === 2 ? "#4c9aff" : f === 3 ? "#30a46c" : "var(--rh-sub)";
+
+  return (
+    <div className="rh-chart">
+      <div className="rh-analysis-title">
+        <strong>FINISH TREND</strong>
+        <span>着順推移 / 直近{runs.length}走（左が古いレース）</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="rh-chart-svg" role="img" aria-label="着順推移グラフ">
+        <rect x={PL} y={y(1)} width={W - PL - PR} height={Math.max(0, y(3) - y(1) + 6)} className="rh-chart-top3" />
+        {gridVals.map(v => (
+          <g key={v}>
+            <line x1={PL} x2={W - PR} y1={y(v)} y2={y(v)} className="rh-chart-grid" />
+            <text x={PL - 6} y={y(v) + 4} textAnchor="end" className="rh-chart-axis">{v}</text>
+          </g>
+        ))}
+        <polyline points={line} fill="none" className="rh-chart-line" />
+        {runs.map((r, i) => (
+          <g key={`${r.race_id}-${i}`}>
+            <circle cx={x(i)} cy={y(r.finish_position)} r={4.5} fill={dotColor(r.finish_position)} className="rh-chart-dot" />
+            <text x={x(i)} y={y(r.finish_position) - 9} textAnchor="middle" className="rh-chart-num">{r.finish_position}</text>
+            {(runs.length <= 12 || i % 5 === 0 || i === runs.length - 1) && (
+              <text x={x(i)} y={H - 8} textAnchor="middle" className="rh-chart-axis">{r.race_date.slice(2, 4)}/{r.race_date.slice(5, 7)}</text>
+            )}
+          </g>
+        ))}
+      </svg>
+      <p className="rh-chart-legend">上の帯は3着以内の圏内。点の色：<span style={{ color: "#e5484d" }}>1着</span> / <span style={{ color: "#4c9aff" }}>2着</span> / <span style={{ color: "#30a46c" }}>3着</span> / その他</p>
+    </div>
+  );
+}
+
+function buildHorseComment(history: HorseHistory[]): string[] {
+  const sentences: string[] = [];
+  const totalStarts = history.length;
+  const totalWins = history.filter(h => h.finish_position === 1).length;
+  const totalTop3 = history.filter(h => h.finish_position !== null && h.finish_position >= 1 && h.finish_position <= 3).length;
+  const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
+  sentences.push(`通算${totalStarts}戦${totalWins}勝、3着以内${totalTop3}回（勝率${pct(totalWins, totalStarts)}%・3着内率${pct(totalTop3, totalStarts)}%）。`);
+
+  const valid = history.filter(isFinished);
+  if (valid.length < 3) {
+    sentences.push("着順の付いた戦績が少ないため、得意条件や脚質の分析はまだ十分にできません。");
+    return sentences;
+  }
+
+  type G = { label: string; starts: number; wins: number; top3: number };
+  function group(cat: (h: HorseHistory) => string | null): G[] {
+    const map = new Map<string, G>();
+    for (const h of valid) {
+      const label = cat(h);
+      if (!label) continue;
+      const row = map.get(label) ?? { label, starts: 0, wins: 0, top3: 0 };
+      row.starts += 1;
+      if (h.finish_position === 1) row.wins += 1;
+      if (h.finish_position <= 3) row.top3 += 1;
+      map.set(label, row);
+    }
+    return [...map.values()];
+  }
+  const surfCat = (h: HorseHistory) => {
+    const s = (h.surface ?? "").trim();
+    if (s.includes("障")) return "障害";
+    if (s.includes("ダート") || s === "ダ") return "ダート";
+    if (s.includes("芝")) return "芝";
+    return null;
+  };
+  const distCat = (h: HorseHistory) => {
+    const d = h.distance_m;
+    if (d == null || d <= 0) return null;
+    if (d < 1400) return "短距離";
+    if (d < 1800) return "マイル前後";
+    if (d < 2400) return "中距離";
+    return "長距離";
+  };
+  const bestOf = (rows: G[], min: number) =>
+    rows.filter(r => r.starts >= min).sort((a, b) => b.top3 / b.starts - a.top3 / a.starts || b.starts - a.starts)[0];
+  const worstOf = (rows: G[], min: number) =>
+    rows.filter(r => r.starts >= min).sort((a, b) => a.top3 / a.starts - b.top3 / b.starts || b.starts - a.starts)[0];
+
+  const surfaces = group(surfCat);
+  const distances = group(distCat);
+  const venues = group(h => h.venue?.trim() || null);
+
+  const bs = bestOf(surfaces, 3);
+  if (bs && bs.top3 / bs.starts >= 0.4) {
+    sentences.push(`${bs.label}では${bs.starts}戦${bs.wins}勝・3着内率${pct(bs.top3, bs.starts)}%と安定している。`);
+  }
+  const bd = bestOf(distances, 3);
+  if (bd && bd.top3 / bd.starts >= 0.4) {
+    sentences.push(`距離は${bd.label}が合っており、3着内率${pct(bd.top3, bd.starts)}%。`);
+  }
+  const bv = bestOf(venues, 3);
+  if (bv && bv.top3 / bv.starts >= 0.5) {
+    sentences.push(`${bv.label}競馬場との相性が良く、${bv.starts}戦で3着内率${pct(bv.top3, bv.starts)}%。`);
+  }
+  const worst = worstOf([...surfaces, ...distances], 4);
+  if (worst && worst.top3 / worst.starts <= 0.15) {
+    sentences.push(`一方、${worst.label}では3着内率${pct(worst.top3, worst.starts)}%と苦戦している。`);
+  }
+
+  const goodGoing = valid.filter(h => (h.going ?? "").includes("良"));
+  const softGoing = valid.filter(h => ["稍", "重", "不"].some(g => (h.going ?? "").includes(g)));
+  const top3Rate = (arr: FinishedRun[]) => (arr.length ? arr.filter(h => h.finish_position <= 3).length / arr.length : 0);
+  if (goodGoing.length >= 3 && softGoing.length >= 3) {
+    if (top3Rate(softGoing) - top3Rate(goodGoing) >= 0.25) {
+      sentences.push("道悪（稍重・重・不良）でも成績が落ちず、むしろ得意なタイプ。");
+    } else if (top3Rate(goodGoing) - top3Rate(softGoing) >= 0.25) {
+      sentences.push("良馬場向きで、道悪では成績が落ちる傾向がある。");
+    }
+  }
+
+  const firsts = valid
+    .map(h => h.corner_positions.find(c => c !== null))
+    .filter((n): n is number => n != null);
+  if (firsts.length >= 3) {
+    const avg = firsts.reduce((a, b) => a + b, 0) / firsts.length;
+    if (avg <= 3.5) sentences.push("序盤から前に付ける先行型。");
+    else if (avg >= 8) sentences.push("序盤は後方で脚を溜めるタイプ。");
+    else sentences.push("中団で流れに乗るタイプ。");
+  }
+
+  const recent = valid.slice(0, 5);
+  if (recent.length >= 3) {
+    const list = recent.map(h => h.finish_position).join("・");
+    const rTop3 = recent.filter(h => h.finish_position <= 3).length;
+    if (rTop3 >= 3) {
+      sentences.push(`近${recent.length}走の着順は${list}着（新しい順）と好調を維持している。`);
+    } else if (rTop3 === 0) {
+      sentences.push(`近${recent.length}走の着順は${list}着（新しい順）と3着以内がなく、立て直しが必要な状況。`);
+    } else {
+      sentences.push(`近${recent.length}走の着順は${list}着（新しい順）。`);
+    }
+  }
+  return sentences;
+}
+
+function HorseAiComment({ history }: { history: HorseHistory[] }) {
+  const sentences = buildHorseComment(history);
+  return (
+    <div className="rh-aicomment">
+      <div className="rh-analysis-title">
+        <strong>AI COMMENT</strong>
+        <span>AIコメント / 確認済み戦績から自動生成</span>
+      </div>
+      <p className="rh-aicomment-text">{sentences.join("")}</p>
+    </div>
+  );
+}
+
 export default function HistoryPage() {
   const [year, setYear] = useState("2026");
   const [races, setRaces] = useState<Race[]>([]);
@@ -698,6 +866,9 @@ export default function HistoryPage() {
                   <span>確認済み履歴の勝率</span>
                 </div>
               </div>
+
+              <HorseTrendChart history={horse.history} />
+              <HorseAiComment history={horse.history} />
 
               <div className="rh-table-wrap">
                 <table className="rh-table">

@@ -412,3 +412,16 @@
   --rh-sort-hover:#059669;
 }
 .rh-theme-toggle{background:var(--rh-btn-bg);border:1px solid var(--rh-btn-border);color:var(--rh-btn-text);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:800;letter-spacing:.5px}
+
+/* Horse finish trend chart + AI comment */
+.rh-chart{margin:8px 22px 0;border:1px solid var(--rh-th-border);border-radius:10px;overflow:hidden;background:var(--rh-inset);padding-bottom:10px}
+.rh-chart-svg{width:100%;height:auto;display:block}
+.rh-chart-line{stroke:var(--rh-accent);stroke-width:2}
+.rh-chart-grid{stroke:var(--rh-border);stroke-width:1}
+.rh-chart-axis{fill:var(--rh-muted);font-size:10px}
+.rh-chart-num{fill:var(--rh-text);font-size:10px;font-weight:700}
+.rh-chart-dot{stroke:var(--rh-panel);stroke-width:1.5}
+.rh-chart-top3{fill:var(--rh-accent);opacity:.08}
+.rh-chart-legend{color:var(--rh-muted);font-size:11px;margin:2px 20px 0}
+.rh-aicomment{margin:14px 22px 0;border:1px solid var(--rh-th-border);border-radius:10px;overflow:hidden;background:var(--rh-inset)}
+.rh-aicomment-text{font-size:13px;line-height:1.9;padding:14px 20px 16px;margin:0}
