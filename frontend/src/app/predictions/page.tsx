@@ -717,7 +717,7 @@ export default function PredictionsPage() {
     return (
       <section key={p.id} className="predcard">
         <div className="predhead">
-          <strong>{p.venue} {p.race_number}R</strong>
+          <strong>{p.venue} {p.race_number}R{(() => { const rn = races.find(r => r.race_date === p.race_date && r.venue === p.venue && r.race_number === p.race_number)?.race_name; return rn ? ` ${rn}` : ""; })()}</strong>
           <span style={{ display: "inline-flex", gap: 10, alignItems: "center" }}>
             <span className="muted">{p.race_date} / {p.bet_type}</span>
             <button type="button" className={confirmDeleteId === p.id ? "delbtn confirm" : "delbtn"}
@@ -793,13 +793,13 @@ export default function PredictionsPage() {
               <div className="selectors">
                 <div><label htmlFor="pred-date" className="fieldlabel">開催日</label><select id="pred-date" value={selectedDate} onChange={e => { setDate(e.target.value); setVenue(""); setRaceNumber(null); }}>{dates.map(d => <option key={d} value={d}>{d}</option>)}</select></div>
                 <div><span className="fieldlabel">競馬場</span><div className="chips">{venues.map(v => <button key={v} className={`chip ${selectedVenue === v ? "on" : ""}`} aria-pressed={selectedVenue === v} onClick={() => { setVenue(v); setRaceNumber(null); }}>{v}</button>)}</div></div>
-                <div><span className="fieldlabel">レース</span><div className="chips">{availableRaces.map(r => <button key={r.id} className={`chip ${selectedRace?.id === r.id ? "on" : ""}`} aria-pressed={selectedRace?.id === r.id} onClick={() => setRaceNumber(r.race_number)}>{r.race_number}R</button>)}</div></div>
+                <div><span className="fieldlabel">レース</span><div className="chips">{availableRaces.map(r => <button key={r.id} className={`chip ${selectedRace?.id === r.id ? "on" : ""}`} aria-pressed={selectedRace?.id === r.id} onClick={() => setRaceNumber(r.race_number)}>{r.race_number}R{r.race_name ? ` ${r.race_name}` : ""}</button>)}</div></div>
               </div>
             </section>
           </>}
           {loadingDetail && <div className="notice">選択レースの詳細を取得しています...</div>}
           {detail && !loadingDetail && <>
-            <div className="sectionhead"><b>02</b> レース情報 / {detail.venue} {detail.race_number}R</div>
+            <div className="sectionhead"><b>02</b> レース情報 / {detail.venue} {detail.race_number}R{detail.race_name ? ` ${detail.race_name}` : ""}</div>
             <section className="panel">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
                 <div><h2 style={{ fontSize: 20, margin: "0 0 7px" }}>{detail.venue} {detail.race_number}R {detail.race_name ? ` / ${detail.race_name}` : ""}</h2><p className="sub">{detail.race_date}　/　{detail.surface ?? "種別未登録"}{detail.distance ? ` ${detail.distance}m` : ""}　/　馬場：{detail.track_condition ?? "未登録"}　/　天候：{detail.weather ?? "未登録"}</p></div>
@@ -992,7 +992,7 @@ export default function PredictionsPage() {
             <div className="sectionhead"><b>05</b> その他の自分の予想（{otherPredictions.length}件）</div>
             {[...otherGroups.entries()].map(([key, group]) => (
               <div key={key}>
-                <p className="sub" style={{ margin: "14px 0 8px" }}>{group[0].race_date}　{group[0].venue} {group[0].race_number}R</p>
+                <p className="sub" style={{ margin: "14px 0 8px" }}>{group[0].race_date}　{group[0].venue} {group[0].race_number}R{(() => { const g0 = group[0]; const rn = races.find(r => r.race_date === g0.race_date && r.venue === g0.venue && r.race_number === g0.race_number)?.race_name; return rn ? ` ${rn}` : ""; })()}</p>
                 {group.map(p => predictionCard(p, false))}
               </div>
             ))}
