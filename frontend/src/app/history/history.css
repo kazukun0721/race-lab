@@ -425,3 +425,18 @@
 .rh-chart-legend{color:var(--rh-muted);font-size:11px;margin:2px 20px 0}
 .rh-aicomment{margin:14px 22px 0;border:1px solid var(--rh-th-border);border-radius:10px;overflow:hidden;background:var(--rh-inset)}
 .rh-aicomment-text{font-size:13px;line-height:1.9;padding:14px 20px 16px;margin:0}
+
+/* Condition analysis bars */
+.rh-bar-row{padding:8px 20px 10px;border-top:1px solid var(--rh-border)}
+.rh-bar-row:first-of-type{border-top:0}
+.rh-bar-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+.rh-bar-label{font-weight:700;font-size:13px;color:var(--rh-text)}
+.rh-bar-meta{font-size:11px;color:var(--rh-muted)}
+.rh-bar-line{display:flex;align-items:center;gap:8px;margin-top:4px}
+.rh-bar-name{flex:0 0 44px;font-size:11px;color:var(--rh-sub)}
+.rh-bar-track{flex:1;height:9px;background:var(--rh-border);border-radius:5px;overflow:hidden}
+.rh-bar-fill{height:100%;border-radius:5px;min-width:0}
+.rh-bar-win{background:#30a46c}
+.rh-bar-top3{background:#4c9aff}
+.rh-bar-pct{flex:0 0 52px;text-align:right;font-size:12px;font-weight:700;color:var(--rh-text)}
+.rh-bar-empty{padding:6px 20px 10px;color:var(--rh-muted);font-size:12px;margin:0}

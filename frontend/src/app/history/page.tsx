@@ -190,37 +190,29 @@ function HorseAnalysis({ history }: { history: HorseHistory[] }) {
     return (
       <div className="rh-analysis-group">
         <h4>{title}</h4>
-        <div className="rh-table-wrap">
-          <table className="rh-table">
-            <thead>
-              <tr>
-                <th>条件</th>
-                <th>戦績</th>
-                <th>1着</th>
-                <th>3着以内</th>
-                <th>勝率</th>
-                <th>3着内率</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(r => (
-                <tr key={r.label}>
-                  <td>{r.label}</td>
-                  <td>{r.starts}</td>
-                  <td>{r.wins}</td>
-                  <td>{r.top3}</td>
-                  <td>{percent(r.wins, r.starts)}</td>
-                  <td>{percent(r.top3, r.starts)}</td>
-                </tr>
-              ))}
-              {!rows.length && (
-                <tr>
-                  <td colSpan={6}>集計できるデータがありません</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {rows.map(r => {
+          const winPct = r.starts ? (r.wins / r.starts) * 100 : 0;
+          const top3Pct = r.starts ? (r.top3 / r.starts) * 100 : 0;
+          return (
+            <div className="rh-bar-row" key={r.label}>
+              <div className="rh-bar-head">
+                <span className="rh-bar-label">{r.label}</span>
+                <span className="rh-bar-meta">{r.starts}戦 {r.wins}勝 / 3着以内 {r.top3}回</span>
+              </div>
+              <div className="rh-bar-line">
+                <span className="rh-bar-name">勝率</span>
+                <div className="rh-bar-track"><div className="rh-bar-fill rh-bar-win" style={{ width: `${winPct}%` }} /></div>
+                <span className="rh-bar-pct">{percent(r.wins, r.starts)}</span>
+              </div>
+              <div className="rh-bar-line">
+                <span className="rh-bar-name">3着内率</span>
+                <div className="rh-bar-track"><div className="rh-bar-fill rh-bar-top3" style={{ width: `${top3Pct}%` }} /></div>
+                <span className="rh-bar-pct">{percent(r.top3, r.starts)}</span>
+              </div>
+            </div>
+          );
+        })}
+        {!rows.length && <p className="rh-bar-empty">集計できるデータがありません</p>}
       </div>
     );
   }
