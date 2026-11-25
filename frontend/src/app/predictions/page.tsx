@@ -103,6 +103,23 @@ function normalizeSelection(value: string, betType: string): { value?: string; e
   return { value: parts.join("-") };
 }
 
+function combinationsOf(arr: number[], k: number): number[][] {
+  if (k === 0) return [[]];
+  if (arr.length < k) return [];
+  const [head, ...rest] = arr;
+  return [...combinationsOf(rest, k - 1).map(c => [head, ...c]), ...combinationsOf(rest, k)];
+}
+
+function permutationsOf(arr: number[], k: number): number[][] {
+  if (k === 0) return [[]];
+  const out: number[][] = [];
+  for (let i = 0; i < arr.length; i++) {
+    const rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
+    for (const tail of permutationsOf(rest, k - 1)) out.push([arr[i], ...tail]);
+  }
+  return out;
+}
+
 export default function PredictionsPage() {
   const router = useRouter();
   const [supabase] = useState(() => createClient());
@@ -141,6 +158,21 @@ export default function PredictionsPage() {
   const [combo, setCombo] = useState<ComboState>({ status: "idle" });
   const selectedAiRef = useRef<AiPrediction | null>(null);
   useEffect(() => { selectedAiRef.current = selectedAi; }, [selectedAi]);
+
+  // JRA方式の買い方（通常／流し／ボックス／フォーメーション）
+  type BuyMode = "通常" | "流し" | "ボックス" | "フォーメーション";
+  const [mode, setMode] = useState<BuyMode>("通常");
+  const [axisPicks, setAxisPicks] = useState<number[]>([]);
+  const [partnerPicks, setPartnerPicks] = useState<number[]>([]);
+  const [boxPicks, setBoxPicks] = useState<number[]>([]);
+  const [formation, setFormation] = useState<number[][]>([[], [], []]);
+  const [pickTarget, setPickTarget] = useState<"axis" | "partner" | "col0" | "col1" | "col2">("axis");
+  const [axisPos, setAxisPos] = useState(1);
+  const [axisPosPair, setAxisPosPair] = useState("1-2");
+  const [multi, setMulti] = useState(false);
+  const [bulkOdds, setBulkOdds] = useState<Record<string,
+    { odds: number | null; oddsMax: number | null; popularity: number | null }>>({});
+  const [bulkStatus, setBulkStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
 
   const loadMyPredictions = useCallback(async () => {
     const { data, error: dbError } = await supabase
@@ -201,6 +233,9 @@ export default function PredictionsPage() {
 
   const resetBet = useCallback(() => {
     setPicks([]); setOdds(""); setSelectedAi(null); setMessage("");
+    setMode("通常");
+    setAxisPicks([]); setPartnerPicks([]); setBoxPicks([]);
+    setFormation([[], [], []]);
   }, []);
 
   useEffect(() => {
@@ -306,6 +341,143 @@ export default function PredictionsPage() {
     return () => { active = false; };
   }, [comboRaceKey, betType, picks, needCount]);
 
+  const maxAxis = betType === "3連複" || betType === "3連単" ? 2 : 1;
+
+  // 選択内容から買い目の組み合わせを全て生成する（JRA方式）。
+  const combos = useMemo<string[]>(() => {
+    let raw: number[][] = [];
+    if (mode === "通常") {
+      if (picks.length === needCount) {
+        raw = [UNORDERED_BETS.has(betType) ? [...picks].sort((a, b) => a - b) : [...picks]];
+      }
+    } else if (mode === "ボックス") {
+      if (boxPicks.length >= needCount) {
+        raw = UNORDERED_BETS.has(betType)
+          ? combinationsOf(boxPicks, needCount) : permutationsOf(boxPicks, needCount);
+      }
+    } else if (mode === "フォーメーション") {
+      const cols = formation.slice(0, needCount);
+      if (cols.every(c => c.length > 0)) {
+        let acc: number[][] = [[]];
+        for (const col of cols) {
+          acc = acc.flatMap(prefix => col.filter(n => !prefix.includes(n)).map(n => [...prefix, n]));
+        }
+        raw = UNORDERED_BETS.has(betType) ? acc.map(a => [...a].sort((a, b) => a - b)) : acc;
+      }
+    } else { // 流し
+      const A = axisPicks;
+      const P = partnerPicks;
+      if (betType === "馬連" || betType === "ワイド") {
+        if (A.length === 1) raw = P.map(p => [A[0], p].sort((a, b) => a - b));
+      } else if (betType === "3連複") {
+        if (A.length === 1) raw = combinationsOf(P, 2).map(c => [A[0], ...c].sort((a, b) => a - b));
+        else if (A.length === 2) raw = P.map(p => [A[0], A[1], p].sort((a, b) => a - b));
+      } else if (betType === "馬単") {
+        if (A.length === 1) {
+          raw = P.map(p => (axisPos === 1 ? [A[0], p] : [p, A[0]]));
+          if (multi) raw = [...raw, ...P.map(p => (axisPos === 1 ? [p, A[0]] : [A[0], p]))];
+        }
+      } else if (betType === "3連単") {
+        if (A.length === 1) {
+          const positions = multi ? [1, 2, 3] : [axisPos];
+          for (const pos of positions) {
+            for (const pair of permutationsOf(P, 2)) {
+              const arr = [...pair];
+              arr.splice(pos - 1, 0, A[0]);
+              raw.push(arr);
+            }
+          }
+        } else if (A.length === 2) {
+          if (multi) {
+            raw = P.flatMap(p => permutationsOf([A[0], A[1], p], 3));
+          } else {
+            const [p1, p2] = axisPosPair.split("-").map(Number);
+            const restPos = [1, 2, 3].find(x => x !== p1 && x !== p2)!;
+            raw = P.map(p => {
+              const arr = new Array<number>(3);
+              arr[p1 - 1] = A[0];
+              arr[p2 - 1] = A[1];
+              arr[restPos - 1] = p;
+              return arr;
+            });
+          }
+        }
+      }
+    }
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const a of raw) {
+      const s = a.join("-");
+      if (!seen.has(s)) { seen.add(s); out.push(s); }
+    }
+    return out.slice(0, 1000);
+  }, [mode, betType, picks, boxPicks, axisPicks, partnerPicks, formation,
+    axisPos, axisPosPair, multi, needCount]);
+
+  // 流し・ボックス・フォーメーションの全点数分のオッズをまとめて取得する。
+  useEffect(() => {
+    if (mode === "通常" || !comboRaceKey || combos.length === 0 || combos.length > 300) {
+      setBulkOdds({});
+      setBulkStatus("idle");
+      return;
+    }
+    let active = true;
+    setBulkStatus("loading");
+    fetch(`/api/combo-odds?race_key=${comboRaceKey}&bet_type=${encodeURIComponent(betType)}&selections=${encodeURIComponent(combos.join(","))}`,
+      { cache: "no-store" })
+      .then(async res => {
+        const body: { results?: Record<string,
+          { odds: number | null; oddsMax: number | null; popularity: number | null }> } = await res.json();
+        if (!active) return;
+        if (!res.ok) { setBulkStatus("error"); return; }
+        setBulkOdds(body.results ?? {});
+        setBulkStatus("ok");
+      })
+      .catch(() => { if (active) setBulkStatus("error"); });
+    return () => { active = false; };
+  }, [mode, comboRaceKey, betType, combos]);
+
+  function clearGroups() {
+    setAxisPicks([]);
+    setPartnerPicks([]);
+    setBoxPicks([]);
+    setFormation([[], [], []]);
+  }
+
+  function handleModeChange(m: BuyMode) {
+    setMode(m);
+    setSelectedAi(null);
+    setMessage("");
+    clearGroups();
+    setPickTarget(m === "フォーメーション" ? "col0" : "axis");
+    if (m !== "通常") { setPicks([]); setOdds(""); }
+  }
+
+  function toggleRow(num: number) {
+    setSelectedAi(null);
+    setMessage("");
+    if (mode === "通常") { togglePick(num); return; }
+    if (mode === "ボックス") {
+      setBoxPicks(prev => (prev.includes(num) ? prev.filter(n => n !== num) : [...prev, num]));
+      return;
+    }
+    if (mode === "フォーメーション") {
+      const idx = Number(pickTarget.slice(3));
+      setFormation(prev => prev.map((col, i) => (i === idx
+        ? (col.includes(num) ? col.filter(n => n !== num) : [...col, num]) : col)));
+      return;
+    }
+    // 流し
+    if (pickTarget === "axis") {
+      if (partnerPicks.includes(num)) return;
+      setAxisPicks(prev => (prev.includes(num) ? prev.filter(n => n !== num)
+        : prev.length >= maxAxis ? prev : [...prev, num]));
+    } else {
+      if (axisPicks.includes(num)) return;
+      setPartnerPicks(prev => (prev.includes(num) ? prev.filter(n => n !== num) : [...prev, num]));
+    }
+  }
+
   function togglePick(num: number) {
     setSelectedAi(null);
     setMessage("");
@@ -322,9 +494,13 @@ export default function PredictionsPage() {
     setOdds("");
     setSelectedAi(null);
     setMessage("");
+    setMode("通常");
+    clearGroups();
   }
 
   function applyAiSelection(row: AiPrediction) {
+    setMode("通常");
+    clearGroups();
     setBetType("単勝");
     setPicks([row.horse_number]);
     setOdds(row.odds_at_prediction == null ? "" : String(row.odds_at_prediction));
@@ -340,6 +516,68 @@ export default function PredictionsPage() {
     if (!Number.isInteger(amount) || amount <= 0 || amount % 100 !== 0 ||
         (parsedOdds !== null && (!Number.isFinite(parsedOdds) || parsedOdds <= 0))) {
       setMessage("入力内容を確認してください。金額は100円単位です。");
+      return;
+    }
+    if (mode !== "通常") {
+      if (combos.length === 0) {
+        setMessage(mode === "流し" ? "軸馬と相手馬を選んでください。" : "買い目が生成されていません。馬を選んでください。");
+        return;
+      }
+      setSaving(true);
+      setMessage("");
+      try {
+        const { data: found, error: raceError } = await supabase
+          .from("horse_races").select("id")
+          .eq("race_date", detail.race_date).eq("venue", detail.venue.trim())
+          .eq("race_number", detail.race_number).limit(2);
+        if (raceError) {
+          setMessage(`レース照合エラー: ${raceError.message}。保存は行っていません。`);
+          return;
+        }
+        if (!found || found.length === 0) {
+          setMessage("対応するレースがhorse_racesにありません。レースデータを登録してから予想を保存してください。");
+          return;
+        }
+        if (found.length > 1) {
+          setMessage("同じ日付・開催場・レース番号のデータが複数あります。誤った紐づけを防ぐため保存を中止しました。");
+          return;
+        }
+        const linkedRaceId = found[0].id;
+        const existing = new Set(myPredictions
+          .filter(p => p.race_date === detail.race_date && p.venue === detail.venue.trim()
+            && p.race_number === detail.race_number && p.bet_type === betType)
+          .map(p => p.selection));
+        const targets = combos.filter(sel => !existing.has(sel));
+        const skipped = combos.length - targets.length;
+        if (targets.length === 0) {
+          setMessage("全ての組み合わせが既に保存済みです。");
+          return;
+        }
+        const rows = targets.map(sel => ({
+          user_id: userId,
+          sport: "horse",
+          race_date: detail.race_date,
+          venue: detail.venue.trim(),
+          race_number: detail.race_number,
+          bet_type: betType,
+          selection: sel,
+          odds: bulkOdds[sel]?.odds ?? null,
+          stake: amount,
+          race_id: linkedRaceId,
+        }));
+        const { error: insertError } = await supabase.from("predictions").insert(rows);
+        if (insertError) {
+          setMessage("保存エラー: " + insertError.message);
+        } else {
+          setMessage(`保存しました！ ${mode}で${targets.length}点` + (skipped > 0 ? `（既に保存済みの${skipped}点は除きました）` : ""));
+          clearGroups();
+          await loadMyPredictions();
+        }
+      } catch (err) {
+        setMessage(`通信エラー: ${err instanceof Error ? err.message : "不明なエラー"}`);
+      } finally {
+        setSaving(false);
+      }
       return;
     }
     const result = normalizeSelection(picks.join("-"), betType);
@@ -525,7 +763,7 @@ export default function PredictionsPage() {
         .rl-pred .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.rl-pred table{border-collapse:collapse;width:100%;min-width:900px}.rl-pred th{text-align:left;color:var(--rl-muted);background:var(--rl-panel);font-size:11px;padding:15px 12px;border-bottom:1px solid var(--line);white-space:nowrap}.rl-pred td{padding:13px 12px;border-bottom:1px solid var(--rl-border);font-size:12px;vertical-align:middle}.rl-pred tr:last-child td{border-bottom:0}.rl-pred tbody tr{cursor:pointer}.rl-pred tbody tr:hover{background:var(--rl-hover)}.rl-pred tbody tr.picked{background:var(--rl-accent-bg)}
         .rl-pred .horse{font-weight:800;color:var(--rl-text)}.rl-pred .number{font-weight:900;color:var(--green)}.rl-pred .muted{color:var(--rl-muted)}.rl-pred .orderbadge{display:inline-block;min-width:20px;text-align:center;background:var(--green);color:var(--rl-accent-bg);border-radius:10px;font-size:11px;font-weight:900;padding:2px 6px;margin-left:8px}
         .rl-pred .detailbtn{border:1px solid var(--rl-border);background:var(--rl-hover);color:var(--rl-accent-bright);border-radius:6px;padding:7px 9px;font-size:11px}.rl-pred .aibtn{border:1px solid var(--green);background:transparent;color:var(--green);border-radius:6px;padding:6px 8px;font-size:11px;font-weight:800;white-space:nowrap}
-        .rl-pred .pickbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0}.rl-pred .pickchip{display:inline-flex;gap:8px;align-items:center;background:var(--rl-accent-bg);color:var(--rl-text);border:1px solid var(--green);border-radius:8px;padding:9px 12px;font-weight:800;font-size:12px}.rl-pred .pickchip button{background:none;border:0;color:var(--green);font-weight:900;padding:0}
+        .rl-pred .combopreview{max-height:190px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:10px}.rl-pred .comborow{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:12px;border-bottom:1px dashed var(--rl-border)}.rl-pred .comborow:last-child{border-bottom:0}.rl-pred .pickbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0}.rl-pred .pickchip{display:inline-flex;gap:8px;align-items:center;background:var(--rl-accent-bg);color:var(--rl-text);border:1px solid var(--green);border-radius:8px;padding:9px 12px;font-weight:800;font-size:12px}.rl-pred .pickchip button{background:none;border:0;color:var(--green);font-weight:900;padding:0}
         .rl-pred .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}.rl-pred .numinput{width:100%;padding:12px;background:var(--rl-bg);color:var(--rl-text);border:1px solid var(--rl-border);border-radius:8px;margin-top:6px}
         .rl-pred .primary{background:var(--green);color:var(--rl-accent-bg);padding:14px 17px;border-radius:8px;font-weight:900;font-size:13px;border:0;width:100%;margin-top:18px}.rl-pred .primary:disabled{opacity:.55;cursor:wait}
         .rl-pred .notice{border:1px solid var(--rl-accent-bg);background:var(--rl-panel);border-radius:10px;padding:14px 18px;color:var(--rl-accent-bright);font-size:12px;margin-top:18px}.rl-pred .alert{border-color:var(--rl-danger-border);background:var(--rl-panel);color:var(--rl-danger-text)}
@@ -578,18 +816,64 @@ export default function PredictionsPage() {
             <section className="panel">
               <span className="fieldlabel">券種</span>
               <div className="chips">{BET_TYPES.map(t => <button key={t} type="button" className={`chip ${betType === t ? "on" : ""}`} aria-pressed={betType === t} onClick={() => handleBetTypeChange(t)}>{t}</button>)}</div>
-              <p className="sub" style={{ marginTop: 12 }}>{betType}は{needCount}頭選びます。表の馬をタップして選択／解除{ORDERED_BETS.has(betType) ? "（タップした順番が着順指定になります）" : ""}。</p>
+              {betType !== "単勝" && betType !== "複勝" && <>
+                <span className="fieldlabel" style={{ marginTop: 14 }}>買い方（JRA方式）</span>
+                <div className="chips">{(["通常", "流し", "ボックス", ...((betType === "馬単" || betType === "3連複" || betType === "3連単") ? ["フォーメーション"] : [])] as BuyMode[]).map(m => <button key={m} type="button" className={`chip ${mode === m ? "on" : ""}`} aria-pressed={mode === m} onClick={() => handleModeChange(m)}>{m}</button>)}</div>
+              </>}
+              {mode === "流し" && <>
+                <div className="chips" style={{ marginTop: 12 }}>
+                  <button type="button" className={`chip ${pickTarget === "axis" ? "on" : ""}`} onClick={() => setPickTarget("axis")}>軸馬を選ぶ（{axisPicks.length}/{maxAxis}頭）</button>
+                  <button type="button" className={`chip ${pickTarget === "partner" ? "on" : ""}`} onClick={() => setPickTarget("partner")}>相手馬を選ぶ（{partnerPicks.length}頭）</button>
+                </div>
+                {(betType === "馬単" || (betType === "3連単" && axisPicks.length === 1)) && (
+                  <div className="chips" style={{ marginTop: 10 }}>
+                    <span className="sub" style={{ margin: 0 }}>軸の着順：</span>
+                    {(betType === "馬単" ? [1, 2] : [1, 2, 3]).map(p => <button key={p} type="button" className={`chip ${axisPos === p ? "on" : ""}`} onClick={() => setAxisPos(p)}>{p}着固定</button>)}
+                  </div>
+                )}
+                {betType === "3連単" && axisPicks.length === 2 && !multi && (
+                  <div className="chips" style={{ marginTop: 10 }}>
+                    <span className="sub" style={{ margin: 0 }}>軸2頭の着順：</span>
+                    {["1-2", "1-3", "2-3"].map(pp => <button key={pp} type="button" className={`chip ${axisPosPair === pp ? "on" : ""}`} onClick={() => setAxisPosPair(pp)}>{pp.replace("-", "着・")}着に固定</button>)}
+                  </div>
+                )}
+                {(betType === "馬単" || betType === "3連単") && (
+                  <div className="chips" style={{ marginTop: 10 }}>
+                    <button type="button" className={`chip ${multi ? "on" : ""}`} aria-pressed={multi} onClick={() => setMulti(v => !v)}>マルチ（軸と相手の着順を入れ替えた組み合わせも買う）</button>
+                  </div>
+                )}
+              </>}
+              {mode === "フォーメーション" && (
+                <div className="chips" style={{ marginTop: 12 }}>
+                  {formation.slice(0, needCount).map((col, i) => (
+                    <button key={i} type="button" className={`chip ${pickTarget === `col${i}` ? "on" : ""}`} onClick={() => setPickTarget(`col${i}` as typeof pickTarget)}>{betType === "3連複" ? `${i + 1}グループ` : `${i + 1}着候補`}を選ぶ（{col.length}頭）</button>
+                  ))}
+                </div>
+              )}
+              <p className="sub" style={{ marginTop: 12 }}>
+                {mode === "通常" && <>{betType}は{needCount}頭選びます。表の馬をタップして選択／解除{ORDERED_BETS.has(betType) ? "（タップした順番が着順指定になります）" : ""}。</>}
+                {mode === "流し" && <>軸馬を固定し、相手馬との全組み合わせを自動生成します。「軸馬を選ぶ／相手馬を選ぶ」を切り替えてから表の馬をタップしてください。</>}
+                {mode === "ボックス" && <>選んだ馬の全組み合わせを買います。表の馬をタップして{needCount}頭以上選んでください。</>}
+                {mode === "フォーメーション" && <>{betType === "3連複" ? "グループ" : "着順"}ごとに候補馬を選びます。列を切り替えてから表の馬をタップしてください。</>}
+              </p>
               {aiMessage && <p className="sub" role="status">{aiMessage}</p>}
               <div className="tablewrap" style={{ marginTop: 12 }}><table><thead><tr>{["枠", "馬番", "馬名", "性齢", "騎手", "人気", "単勝オッズ", "AI勝率", "期待回収率", "AI評価", ""].map(h => <th key={h}>{h}</th>)}</tr></thead><tbody>
                 {sortedEntries.map(h => {
                   const num = h.horse_number ?? -1;
                   const pred = aiByHorse.get(num);
                   const wo = winOdds.get(num);
-                  const pickIndex = picks.indexOf(num);
+                  const pickIndex = mode === "通常" ? picks.indexOf(num) : -1;
+                  const axisIndex = mode === "流し" ? axisPicks.indexOf(num) : -1;
+                  const isPartner = mode === "流し" && partnerPicks.includes(num);
+                  const isBox = mode === "ボックス" && boxPicks.includes(num);
+                  const formCols = mode === "フォーメーション"
+                    ? formation.map((c, i) => (c.includes(num) ? i + 1 : null)).filter((v): v is number => v !== null)
+                    : [];
+                  const rowPicked = pickIndex >= 0 || axisIndex >= 0 || isPartner || isBox || formCols.length > 0;
                   return (
-                    <tr key={h.id} className={pickIndex >= 0 ? "picked" : ""} onClick={() => h.horse_number !== null && togglePick(h.horse_number)}>
+                    <tr key={h.id} className={rowPicked ? "picked" : ""} onClick={() => h.horse_number !== null && toggleRow(h.horse_number)}>
                       <td>{h.bracket_number ?? "-"}</td>
-                      <td className="number">{h.horse_number ?? "未定"}{pickIndex >= 0 && ORDERED_BETS.has(betType) && <span className="orderbadge">{pickIndex + 1}</span>}</td>
+                      <td className="number">{h.horse_number ?? "未定"}{pickIndex >= 0 && ORDERED_BETS.has(betType) && <span className="orderbadge">{pickIndex + 1}</span>}{axisIndex >= 0 && <span className="orderbadge">軸{maxAxis > 1 ? axisIndex + 1 : ""}</span>}{isPartner && <span className="orderbadge">相手</span>}{isBox && <span className="orderbadge">BOX</span>}{formCols.length > 0 && <span className="orderbadge">{formCols.join("・")}列</span>}</td>
                       <td><span className="horse">{h.horse_name}</span></td>
                       <td>{h.horse_sex ?? ""}{h.horse_age ?? ""}</td>
                       <td>{h.jockey_name ?? "-"}</td>
@@ -605,26 +889,87 @@ export default function PredictionsPage() {
               </tbody></table>{entries.length === 0 && <div className="empty">出走馬はまだ登録されていません。</div>}</div>
 
               <form onSubmit={handleSave}>
-                <div className="pickbar">
-                  <span className="fieldlabel" style={{ margin: 0 }}>選択中の買い目（{picks.length}/{needCount}頭）</span>
-                  {picks.length === 0 && <span className="muted">まだ選んでいません</span>}
-                  {picks.map((n, i) => (
-                    <span key={n} className="pickchip">{ORDERED_BETS.has(betType) ? `${i + 1}. ` : ""}{n} {nameByNumber.get(n) ?? ""}<button type="button" aria-label={`${n}番を外す`} onClick={() => togglePick(n)}>×</button></span>
-                  ))}
-                </div>
+                {mode === "通常" && (
+                  <div className="pickbar">
+                    <span className="fieldlabel" style={{ margin: 0 }}>選択中の買い目（{picks.length}/{needCount}頭）</span>
+                    {picks.length === 0 && <span className="muted">まだ選んでいません</span>}
+                    {picks.map((n, i) => (
+                      <span key={n} className="pickchip">{ORDERED_BETS.has(betType) ? `${i + 1}. ` : ""}{n} {nameByNumber.get(n) ?? ""}<button type="button" aria-label={`${n}番を外す`} onClick={() => togglePick(n)}>×</button></span>
+                    ))}
+                  </div>
+                )}
+                {mode === "流し" && (
+                  <div className="pickbar">
+                    <span className="fieldlabel" style={{ margin: 0 }}>軸馬</span>
+                    {axisPicks.length === 0 && <span className="muted">未選択</span>}
+                    {axisPicks.map((n, i) => (
+                      <span key={n} className="pickchip">{maxAxis > 1 ? `軸${i + 1} ` : ""}{n} {nameByNumber.get(n) ?? ""}<button type="button" aria-label={`${n}番を外す`} onClick={() => setAxisPicks(prev => prev.filter(x => x !== n))}>×</button></span>
+                    ))}
+                    <span className="fieldlabel" style={{ margin: 0 }}>相手馬</span>
+                    {partnerPicks.length === 0 && <span className="muted">未選択</span>}
+                    {partnerPicks.map(n => (
+                      <span key={n} className="pickchip">{n} {nameByNumber.get(n) ?? ""}<button type="button" aria-label={`${n}番を外す`} onClick={() => setPartnerPicks(prev => prev.filter(x => x !== n))}>×</button></span>
+                    ))}
+                  </div>
+                )}
+                {mode === "ボックス" && (
+                  <div className="pickbar">
+                    <span className="fieldlabel" style={{ margin: 0 }}>ボックス（{boxPicks.length}頭）</span>
+                    {boxPicks.length === 0 && <span className="muted">まだ選んでいません</span>}
+                    {boxPicks.map(n => (
+                      <span key={n} className="pickchip">{n} {nameByNumber.get(n) ?? ""}<button type="button" aria-label={`${n}番を外す`} onClick={() => setBoxPicks(prev => prev.filter(x => x !== n))}>×</button></span>
+                    ))}
+                  </div>
+                )}
+                {mode === "フォーメーション" && (
+                  <div className="pickbar">
+                    {formation.slice(0, needCount).map((col, i) => (
+                      <span key={i} style={{ display: "inline-flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                        <span className="fieldlabel" style={{ margin: 0 }}>{betType === "3連複" ? `${i + 1}グループ` : `${i + 1}着`}</span>
+                        {col.length === 0 && <span className="muted">未選択</span>}
+                        {col.map(n => (
+                          <span key={n} className="pickchip">{n} {nameByNumber.get(n) ?? ""}<button type="button" aria-label={`${n}番を外す`} onClick={() => setFormation(prev => prev.map((c, ci) => (ci === i ? c.filter(x => x !== n) : c)))}>×</button></span>
+                        ))}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {selectedAi && (
                   <p className="airef">AI参照中：{selectedAi.horse_number}番 / {selectedAi.model_version}（買い目やオッズを変更すると参照を解除します）</p>
                 )}
                 <div className="formgrid">
-                  <label>オッズ（任意・選択すると自動入力）
-                    <input className="numinput" type="number" min="0.01" step="any" value={odds}
-                      onChange={e => { setOdds(e.target.value); setSelectedAi(null); }} />
-                  </label>
-                  <label>仮想購入金額（円・100円単位）
+                  {mode === "通常" && (
+                    <label>オッズ（任意・選択すると自動入力）
+                      <input className="numinput" type="number" min="0.01" step="any" value={odds}
+                        onChange={e => { setOdds(e.target.value); setSelectedAi(null); }} />
+                    </label>
+                  )}
+                  <label>仮想購入金額（円・100円単位{mode !== "通常" ? "・1点あたり" : ""}）
                     <input className="numinput" type="number" min="100" step="100" required value={stake}
                       onChange={e => setStake(e.target.value)} />
                   </label>
                 </div>
+                {mode !== "通常" && (
+                  <div style={{ marginTop: 12 }}>
+                    <p className="sub">生成された買い目：<strong>{combos.length}点</strong>{combos.length > 0 && <> × {(Number(stake) || 0).toLocaleString()}円 = 合計 <strong>{(combos.length * (Number(stake) || 0)).toLocaleString()}円</strong></>}</p>
+                    {bulkStatus === "loading" && <p className="sub">オッズを取得しています...</p>}
+                    {bulkStatus === "error" && <p className="sub">オッズを取得できませんでした（PC側に接続できません）。オッズなしで保存されます。</p>}
+                    {combos.length > 300 && <p className="sub">点数が多いため、各点のオッズ表示は省略されます。</p>}
+                    {combos.length > 0 && combos.length <= 300 && (
+                      <div className="combopreview">
+                        {combos.map(sel => {
+                          const o = bulkOdds[sel];
+                          return (
+                            <div key={sel} className="comborow">
+                              <span>{sel.split("-").map(n => `${n} ${nameByNumber.get(Number(n)) ?? ""}`).join("　-　")}</span>
+                              <span>{o?.odds != null ? `${o.odds.toFixed(1)}${o.oddsMax != null ? `〜${o.oddsMax.toFixed(1)}` : ""}倍${o.popularity != null ? `（${o.popularity}番人気）` : ""}` : bulkStatus === "ok" ? "未取得" : ""}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {betType !== "単勝" && betType !== "複勝" && picks.length === needCount && combo.status !== "idle" && (
                   <p className="sub" style={{ marginTop: 10 }}>
                     {combo.status === "loading" && "現在のオッズを取得しています..."}
@@ -634,7 +979,7 @@ export default function PredictionsPage() {
                   </p>
                 )}
                 <div className="chips" style={{ marginTop: 10 }}>{STAKE_PRESETS.map(v => <button key={v} type="button" className={`chip ${Number(stake) === v ? "on" : ""}`} onClick={() => setStake(String(v))}>{v.toLocaleString()}円</button>)}</div>
-                <button type="submit" className="primary" disabled={saving}>{saving ? "保存中..." : "予想を保存する"}</button>
+                <button type="submit" className="primary" disabled={saving}>{saving ? "保存中..." : mode !== "通常" ? `予想を保存する（${combos.length}点）` : "予想を保存する"}</button>
               </form>
               {message && <p role="status" style={{ marginTop: 14 }}>{message}</p>}
             </section>

@@ -17,7 +17,12 @@ export async function GET(request: Request) {
   const raceKey = searchParams.get("race_key") ?? "";
   const betType = searchParams.get("bet_type") ?? "";
   const selection = searchParams.get("selection") ?? "";
-  if (!/^\d{16}$/.test(raceKey) || !BET_TYPES.has(betType) || !/^\d{1,2}(-\d{1,2}){0,2}$/.test(selection)) {
+  const selections = searchParams.get("selections") ?? "";
+  const selPattern = /^\d{1,2}(-\d{1,2}){0,2}$/;
+  const bulkValid = selections !== "" && selections.split(",").length <= 1000
+    && selections.split(",").every(s => selPattern.test(s));
+  if (!/^\d{16}$/.test(raceKey) || !BET_TYPES.has(betType)
+      || (selections ? !bulkValid : !selPattern.test(selection))) {
     return NextResponse.json({ error: "パラメータが不正です。" }, { status: 400 });
   }
 
@@ -26,7 +31,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "オッズ取得機能が未設定です。" }, { status: 502 });
   }
   const url = new URL("/combo-odds", base);
-  url.search = new URLSearchParams({ race_key: raceKey, bet_type: betType, selection }).toString();
+  url.search = new URLSearchParams(selections
+    ? { race_key: raceKey, bet_type: betType, selections }
+    : { race_key: raceKey, bet_type: betType, selection }).toString();
   try {
     const response = await fetch(url, {
       cache: "no-store",
