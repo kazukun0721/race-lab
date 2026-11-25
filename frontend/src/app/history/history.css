@@ -347,3 +347,6 @@
 }
 .rh-sort{background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:0;letter-spacing:inherit}
 .rh-sort:hover{color:#fff}
+.rh-analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px}
+@media (max-width:900px){.rh-analysis-grid{grid-template-columns:1fr}}
+.rh-metrics-row td{padding:4px 16px 8px;font-size:11px;color:#8fa8bf;background:#0b1523;white-space:normal;line-height:1.7}

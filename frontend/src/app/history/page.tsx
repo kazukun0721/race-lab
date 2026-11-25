@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./history.css";
 
 type Race = {
@@ -230,10 +230,12 @@ function HorseAnalysis({ history }: { history: HorseHistory[] }) {
         <strong>CONDITION ANALYSIS</strong>
         <span>条件別パフォーマンス / 確認済み履歴のみ</span>
       </div>
-      {table("芝・ダート別", surfaces)}
-      {table("馬場状態別", summarize(h => h.going?.trim() || null))}
-      {table("距離帯別", distances)}
-      {table("競馬場別", venues)}
+      <div className="rh-analysis-grid">
+        {table("芝・ダート別", surfaces)}
+        {table("馬場状態別", summarize(h => h.going?.trim() || null))}
+        {table("距離帯別", distances)}
+        {table("競馬場別", venues)}
+      </div>
       <p className="rh-note">
         勝率と3着内率の分母は、各条件で馬IDを確認できた戦績件数です。
         条件が空欄の戦績は、その条件別集計から除いています。
@@ -695,8 +697,6 @@ export default function HistoryPage() {
                 </div>
               </div>
 
-              <HorseAnalysis history={horse.history} />
-
               <div className="rh-table-wrap">
                 <table className="rh-table">
                   <thead>
@@ -710,51 +710,60 @@ export default function HistoryPage() {
                       <th>走破タイム</th>
                       <th>上がり3F</th>
                       <th>通過順位</th>
-                      <th>TARGET 個馬指標</th>
-                      <th>TARGET レース指標</th>
                       <th>単勝</th>
-                      <th>馬IDの出典</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {horse.history.map(h => (
-                      <tr key={`${h.race_id}-${h.horse_number}`}>
-                        <td>{h.race_date}</td>
-                        <td>{h.venue}</td>
-                        <td>{h.race_name || "一般競走"}</td>
-                        <td>{h.horse_number}</td>
-                        <td>{formatFinish(h.finish_position, h.abnormal_code)}</td>
-                        <td>{[
-                          h.surface, h.distance_m ? `${h.distance_m}m` : null, h.going,
-                        ].filter(Boolean).join(" / ") || "－"}</td>
-                        <td>{h.race_time ?? "－"}</td>
-                        <td>{h.last3f_seconds == null ? "－" : `${h.last3f_seconds.toFixed(1)}秒`}</td>
-                        <td>{h.corner_positions.some(n => n !== null)
-                          ? h.corner_positions.map(n => n ?? "－").join(" / ")
-                          : "－"}</td>
-                        <td>
-                          <div>PCI {h.target_metrics?.pci ?? "－"}</div>
-                          <div>上がり3F順位 {h.target_metrics?.last3f_rank ?? "－"}</div>
-                          <div>上3F地点差（秒） {h.target_metrics?.last3f_point_gap_seconds ?? "－"}</div>
-                          <div>Ave-3F（秒） {h.target_metrics?.ave_3f_seconds ?? "－"}</div>
-                          <div>4角通過順位 {h.target_metrics?.corner4_position ?? "－"}</div>
-                        </td>
-                        <td>
-                          <div>PCI3 {h.target_metrics?.pci3 ?? "－"}</div>
-                          <div>レースPCI {h.target_metrics?.race_pci ?? "－"}</div>
-                        </td>
-                        <td>{h.win_odds ?? "－"}</td>
-                        <td>{h.id_source === "registered" ? "履歴DB登録済み" : "JV照合"}</td>
-                      </tr>
-                    ))}
+                    {horse.history.map(h => {
+                      const m = h.target_metrics;
+                      const pairs: string[] = m ? [
+                        m.pci != null ? `PCI ${m.pci}` : null,
+                        m.last3f_rank != null ? `上がり3F順位 ${m.last3f_rank}` : null,
+                        m.last3f_point_gap_seconds != null ? `上3F地点差 ${m.last3f_point_gap_seconds}秒` : null,
+                        m.ave_3f_seconds != null ? `Ave-3F ${m.ave_3f_seconds}秒` : null,
+                        m.corner4_position != null ? `4角通過 ${m.corner4_position}` : null,
+                        m.pci3 != null ? `PCI3 ${m.pci3}` : null,
+                        m.race_pci != null ? `レースPCI ${m.race_pci}` : null,
+                      ].filter((s): s is string => s !== null) : [];
+
+                      return (
+                        <Fragment key={`${h.race_id}-${h.horse_number}`}>
+                          <tr>
+                            <td>{h.race_date}</td>
+                            <td>{h.venue}</td>
+                            <td>{h.race_name || "一般競走"}</td>
+                            <td>{h.horse_number}</td>
+                            <td className="rh-finish">{formatFinish(h.finish_position, h.abnormal_code)}</td>
+                            <td>{[
+                              h.surface, h.distance_m ? `${h.distance_m}m` : null, h.going,
+                            ].filter(Boolean).join(" / ") || "－"}</td>
+                            <td>{h.race_time ?? "－"}</td>
+                            <td>{h.last3f_seconds == null ? "－" : `${h.last3f_seconds.toFixed(1)}秒`}</td>
+                            <td>{h.corner_positions.some(n => n !== null)
+                              ? h.corner_positions.map(n => n ?? "－").join(" / ")
+                              : "－"}</td>
+                            <td>{h.win_odds ?? "－"}</td>
+                          </tr>
+                          {pairs.length > 0 && (
+                            <tr className="rh-metrics-row">
+                              <td colSpan={10}>
+                                {"TARGET指標：" + pairs.join("　／　")}
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
 
+              <HorseAnalysis history={horse.history} />
+
               <p className="rh-note">
                 履歴DB登録済み {horse.registered_entries}件 ／ JV馬IDとの読み取り時照合 {horse.jv_matched_entries}件。
                 馬IDが確認できる戦績を表示しています。血統表は未収録です。
-                TARGET指標は2024年の中央競馬分です。対象外・欠損は「－」で表示しています。
+                TARGET指標は2024年の中央競馬分で、ある戦績だけ行の下に細く表示しています。
               </p>
             </section>
           </>
