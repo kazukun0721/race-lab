@@ -1,0 +1,360 @@
+.rh-root{
+  min-height:100vh;
+  background:#090f1c;
+  color:#eaf3ff;
+  font-family:Arial,"Noto Sans JP",sans-serif;
+}
+.rh-topbar{
+  height:52px;
+  border-bottom:1px solid #26374a;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:0 32px;
+  color:#7794b1;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:1.4px;
+}
+.rh-content{
+  max-width:1200px;
+  padding:40px 32px 80px;
+  margin:auto;
+}
+.rh-eyebrow{
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1.6px;
+  color:#34d399;
+}
+.rh-hero{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin:16px 0 32px;
+}
+.rh-hero h1{
+  font-size:42px;
+  font-weight:900;
+  letter-spacing:-1.4px;
+  margin:0 0 8px;
+}
+.rh-hero h1 span,.rh-hero-mark span{color:#34d399}
+.rh-hero p{
+  color:#91a9c5;
+  font-size:13px;
+  margin:0;
+}
+.rh-hero-mark{
+  font-size:100px;
+  font-weight:900;
+  letter-spacing:-12px;
+  color:#172438;
+  padding-right:35px;
+}
+.rh-stats{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:13px;
+  margin-bottom:34px;
+}
+.rh-stat,.rh-panel{
+  background:#111d2e;
+  border:1px solid #26374a;
+  border-radius:12px;
+}
+.rh-stat{padding:20px;min-width:0}
+.rh-stat-label{
+  font-size:10px;
+  letter-spacing:1.2px;
+  font-weight:800;
+  color:#8fa8c3;
+}
+.rh-stat strong{
+  display:block;
+  font-size:27px;
+  margin:14px 0 9px;
+  letter-spacing:-.5px;
+}
+.rh-stat small{font-size:11px;color:#839cb6}
+.rh-section-heading{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:27px 0 14px;
+}
+.rh-section-heading h2{font-size:14px;margin:0}
+.rh-section-heading h2 span{
+  color:#34d399;
+  font-size:11px;
+  margin-right:12px;
+}
+.rh-section-heading small{
+  font-size:10px;
+  color:#7894b0;
+  letter-spacing:1.5px;
+}
+.rh-filter{padding:22px}
+.rh-horse-search{padding:22px}
+.rh-horse-search label{display:block;color:#a9bdd1;font-size:13px;margin-bottom:8px}
+.rh-horse-search-controls{display:flex;gap:8px;max-width:560px}
+.rh-horse-search input,.rh-horse-search button{
+  color:inherit;background:#142236;border:1px solid #3a526d;border-radius:8px;padding:9px 12px;
+}
+.rh-horse-search input{flex:1;min-width:0}
+.rh-horse-search button{cursor:pointer}
+.rh-horse-search button:disabled{opacity:.55;cursor:default}
+.rh-horse-search :is(input,button):focus-visible{outline:2px solid #91d3ff;outline-offset:2px}
+.rh-horse-results{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:6px;max-width:560px}
+.rh-horse-results button{display:flex;align-items:baseline;gap:4px 14px;flex-wrap:wrap;width:100%;text-align:left}
+.rh-horse-results span{color:#a9bdd1;font-size:12px}
+.rh-horse-error{color:#ffb2a7}
+.rh-filter-top{
+  display:grid;
+  grid-template-columns:160px 190px 1fr;
+  gap:18px;
+  align-items:end;
+}
+.rh-filter label>span,.rh-page-controls>span,.rh-filter-label{
+  display:block;
+  color:#91a9c5;
+  font-size:11px;
+  font-weight:800;
+  margin-bottom:10px;
+}
+.rh-filter select{
+  width:100%;
+  padding:11px;
+  background:#0c192a;
+  border:1px solid #365064;
+  border-radius:8px;
+  color:#eaf3ff;
+}
+.rh-page-controls>div{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.rh-root button{
+  cursor:pointer;
+  font:inherit;
+}
+.rh-page-controls button,.rh-venues button,.rh-race-buttons button,.rh-horse-heading button{
+  background:#19283b;
+  border:1px solid #304459;
+  border-radius:8px;
+  color:#dce8f5;
+  padding:10px 13px;
+  font-size:12px;
+  font-weight:800;
+}
+.rh-root button:disabled{opacity:.35;cursor:not-allowed}
+.rh-root button:hover:not(:disabled){border-color:#34d399}
+.rh-filter-label{margin:22px 0 12px}
+.rh-venues{display:flex;gap:8px;flex-wrap:wrap}
+.rh-venues button.selected{
+  background:#123b34;
+  border-color:#34d399;
+  color:#34d399;
+}
+.rh-race-panel{padding:20px}
+.rh-race-buttons{
+  display:grid;
+  grid-template-columns:repeat(12,minmax(0,1fr));
+  gap:7px;
+}
+.rh-race-buttons button{
+  padding:14px 3px;
+  font-size:13px;
+}
+.rh-race-buttons button.selected{
+  background:#34d399;
+  border-color:#34d399;
+  color:#06241e;
+}
+.rh-race-summary{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:24px;
+  align-items:center;
+}
+.rh-race-summary h3,.rh-horse-heading h3{
+  font-size:22px;
+  margin:10px 0;
+}
+.rh-race-summary p,.rh-horse-heading p{
+  font-size:12px;
+  color:#91a9c5;
+  margin:0;
+}
+.rh-result-tag{
+  border:1px solid #25624f;
+  color:#34d399;
+  padding:7px 12px;
+  border-radius:6px;
+  font-size:10px;
+  font-weight:800;
+}
+.rh-table-wrap{overflow-x:auto}
+.rh-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+  text-align:left;
+}
+.rh-table th{
+  padding:14px 16px;
+  background:#0e1929;
+  color:#839bb4;
+  font-size:11px;
+  white-space:nowrap;
+  border-bottom:1px solid #2a3c4f;
+}
+.rh-table td{
+  padding:12px 16px;
+  border-bottom:1px solid #223448;
+  white-space:nowrap;
+}
+.rh-table tbody tr:nth-child(even){background:#142236}
+.rh-table tbody tr:last-child td{border-bottom:0}
+.rh-finish{font-weight:800}
+.rh-gate{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  border-radius:5px;
+  font-weight:900;
+}
+.rh-gate-1{background:#f5f5f5;color:#111}
+.rh-gate-2{background:#222;color:#fff;border:1px solid #888}
+.rh-gate-3{background:#e53e3e;color:#fff}
+.rh-gate-4{background:#3182ce;color:#fff}
+.rh-gate-5{background:#f6d94c;color:#111}
+.rh-gate-6{background:#2f9e44;color:#fff}
+.rh-gate-7{background:#ed8936;color:#111}
+.rh-gate-8{background:#d87ac2;color:#111}
+.rh-horse-name{font-weight:800}
+.rh-horse-name button,.rh-history-link{
+  border:0;
+  background:transparent;
+  color:#34d399;
+  font-weight:800;
+  padding:0;
+}
+.rh-horse-name button:hover,.rh-history-link:hover{text-decoration:underline}
+.rh-muted,.rh-note,.rh-loading{color:#829bb4;font-size:12px}
+.rh-note,.rh-loading{padding:14px 22px}
+.rh-horse-heading{
+  padding:22px;
+  display:flex;
+  justify-content:space-between;
+  align-items:start;
+}
+.rh-horse-stats{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  padding:0 22px 20px;
+}
+.rh-horse-stats>div{
+  background:#0c192a;
+  border:1px solid #26374a;
+  border-radius:9px;
+  padding:14px;
+}
+.rh-horse-stats strong{display:block;font-size:25px}
+.rh-horse-stats span{display:block;font-size:10px;color:#8ca5be;margin-top:5px}
+.rh-error{
+  margin:18px 0;
+  padding:14px;
+  border:1px solid #8b4552;
+  background:#331d29;
+  border-radius:8px;
+  color:#ffb6bf;
+}
+.rh-empty{padding:24px;color:#91a9c5}
+.rh-footer{
+  margin-top:40px;
+  color:#607c96;
+  font-size:10px;
+  letter-spacing:1.3px;
+}
+@media(max-width:950px){
+  .rh-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rh-filter-top{grid-template-columns:1fr 1fr}
+  .rh-page-controls{grid-column:1/-1}
+  .rh-race-buttons{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+@media(max-width:600px){
+  .rh-content{padding:26px 16px 60px}
+  .rh-topbar{padding:0 16px}
+  .rh-topbar>span:last-child{display:none}
+  .rh-hero h1{font-size:32px}
+  .rh-hero-mark{display:none}
+  .rh-stat{padding:14px}
+  .rh-stat strong{font-size:21px}
+  .rh-filter-top{grid-template-columns:1fr}
+  .rh-page-controls{grid-column:auto}
+  .rh-race-buttons{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .rh-horse-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rh-section-heading small{font-size:8px}
+}
+
+
+/* Horse condition analysis */
+.rh-analysis {
+  margin: 8px 22px 24px;
+  border: 1px solid #2a4051;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0c192a;
+}
+
+.rh-analysis-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 18px 20px;
+  border-bottom: 1px solid #26374a;
+}
+
+.rh-analysis-title strong {
+  color: #34d399;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.rh-analysis-title span {
+  color: #91a9c5;
+  font-size: 12px;
+}
+
+.rh-analysis-group {
+  padding: 14px 0;
+}
+
+.rh-analysis-group h4 {
+  margin: 4px 20px 14px;
+  font-size: 13px;
+  color: #eaf3ff;
+}
+
+.rh-analysis .rh-table td:first-child {
+  font-weight: 700;
+}
+
+.rh-analysis .rh-note {
+  line-height: 1.8;
+  border-top: 1px solid #26374a;
+  margin: 0;
+}
+
+@media(max-width:600px) {
+  .rh-analysis {
+    margin: 8px 12px 20px;
+  }
+}

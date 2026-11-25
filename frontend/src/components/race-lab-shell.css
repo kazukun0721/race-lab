@@ -1,0 +1,101 @@
+/* RACE LAB Step 475 | unified layout & typography.
+   Replaces the accumulated 471-474 overrides; page data logic is untouched. */
+.rl-shared-shell {
+  --rl-sidebar-width:196px;
+  --rl-header-height:52px;
+  --rl-column-width:1200px;
+  --rl-page-gutter:32px;
+  --rl-page-top:40px;
+  --rl-title-size:32px;
+  --rl-section-size:14px;
+  --rl-body-size:13px;
+  --rl-note-size:12px;
+  --rl-label-size:10px;
+  --rl-accent:#34d399;
+  display:flex; min-height:100vh; background:#090f1c; color:#eaf3ff;
+}
+.rl-shared-sidebar {position:sticky;top:0;align-self:flex-start;flex:0 0 var(--rl-sidebar-width);width:var(--rl-sidebar-width);height:100vh;background:#0d1726;border-right:1px solid #26374a;padding:20px 12px;display:flex;flex-direction:column;z-index:50}
+.rl-shared-logo{font:900 15px/1.3 Arial,sans-serif;letter-spacing:1.5px;color:#f1f7ff;text-decoration:none;margin:0 7px 37px}
+.rl-shared-logo span{color:#31ddb1}
+.rl-shared-caption{font:800 10px/1.4 Arial,sans-serif;letter-spacing:1.6px;color:#7190b3;padding:0 8px 13px}
+.rl-shared-nav{display:grid;gap:5px}
+.rl-shared-link{display:flex;align-items:center;gap:12px;padding:13px 10px;border-radius:7px;color:#a5bcd8;text-decoration:none;font:700 12px/1.4 Arial,'Noto Sans JP',sans-serif;white-space:nowrap}
+.rl-shared-link:hover{background:#17293d;color:#f5fffc}
+.rl-shared-link.is-active{background:#113c35;color:#36e5b8}
+.rl-shared-icon{width:18px;flex:0 0 18px;text-align:center;font-size:16px}
+.rl-shared-footer{margin-top:auto;font:700 9px/1.5 Arial,sans-serif;letter-spacing:.5px;color:#6489a9}
+.rl-shared-body{flex:1;min-width:0}
+/* Hide duplicated legacy navigation, including the old horse page nav. */
+.rl-shared-body :is(.rl-sidebar,.rl466-sidebar,.rl-review-sidebar,.rank-side,.rl470-sidebar),
+.rl-shared-body .rl-horse .side,
+.rl-shared-body .rl-horse .mobilemenu {display:none!important}
+/* Normalize legacy layout wrappers. */
+.rl-shared-body :is(.rl-layout,.rl466-shell,.rl-review-shell,.rank-shell,.rl470-shell){display:block!important;width:100%!important;min-height:100vh}
+.rl-shared-body :is(.rl-main,.rl466-content,.rl-review-main,.rank-body,.rl470-main),
+.rl-shared-body .rl-horse .workspace{display:block!important;width:100%!important;max-width:none!important;min-width:0!important;margin-left:0!important}
+/* Every page uses the same header dimensions. */
+.rl-shared-body :is(.rl-topbar,.rl466-top,.rl-review-topbar,.rank-top,.rl470-topbar),
+.rl-shared-body .rl-horse .topbar{box-sizing:border-box!important;width:100%!important;height:var(--rl-header-height)!important;min-height:var(--rl-header-height)!important;margin:0!important;padding:0 var(--rl-page-gutter)!important}
+/* One content grid: same width, left/right edge, top offset. */
+.rl-shared-body :is(.rl-content,.rl466-main,.rl-review-content,.rank-content,.rl470-content),
+.rl-shared-body .rl-horse .content{
+  box-sizing:border-box!important;width:100%!important;max-width:var(--rl-column-width)!important;
+  margin:0 auto!important;padding:var(--rl-page-top) var(--rl-page-gutter) 80px!important;
+  font:400 var(--rl-body-size)/1.7 Arial,'Noto Sans JP','Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+}
+/* Standardized page kicker. */
+.rl-shared-body :is(.rl-eyebrow,.rl466-eyebrow,.rl-review-eyebrow,.rank-eyebrow,.rl470-eyebrow),
+.rl-shared-body .rl-horse .eyebrow{
+  font-size:var(--rl-label-size)!important;line-height:1.5!important;font-weight:900!important;
+  letter-spacing:1.6px!important;color:var(--rl-accent)!important;margin:0 0 12px!important;
+}
+/* Title: dashboard hero remains intentionally larger. */
+.rl-shared-body :is(.rl466-heading,.rl-review-content>h1,.rank-heading h1,.rl470-content>h1),
+.rl-shared-body .rl-horse .content h1{
+  font-size:var(--rl-title-size)!important;line-height:1.3!important;letter-spacing:-.025em!important;
+  font-weight:900!important;margin:0 0 10px!important;
+}
+/* Descriptions: same scale and line-height, without overwriting table labels. */
+.rl-shared-body :is(.rl466-desc,.rl470-intro,.rank-heading p,.rl-review-content>p),
+.rl-shared-body .rl-horse .content .sub{
+  font-size:var(--rl-body-size)!important;line-height:1.7!important;color:#91a9c5!important;
+  margin:0!important;
+}
+/* Heading-to-first-section rhythm. */
+.rl-shared-body .rl466-main .rl466-desc{margin-bottom:32px!important}
+.rl-shared-body .rank-heading{margin:0 0 32px!important;min-height:0!important}
+.rl-shared-body .rl470-intro{margin-bottom:32px!important}
+.rl-shared-body .rl-review-content>p{margin-bottom:32px!important}
+.rl-shared-body .rl-horse .content .sub{margin-bottom:32px!important}
+/* Section heading tokens. Keep numbering, right-aligned context and badges. */
+.rl-shared-body :is(.rl-section-heading h2,.rl466-sectiontitle,.rank-section-title b,.rl470-sectionhead,.rl-review-content section h2),
+.rl-shared-body .rl-horse .sectionhead{
+  font-size:var(--rl-section-size)!important;line-height:1.5!important;font-weight:800!important;
+}
+.rl-shared-body :is(.rl466-sectiontitle,.rank-section-title,.rl470-sectionhead),
+.rl-shared-body .rl-horse .sectionhead{margin-top:26px!important;margin-bottom:14px!important}
+.rl-shared-body .rl466-main .rl466-sectiontitle:first-of-type{margin-top:0!important}
+.rl-shared-body .rank-section-title:first-of-type{margin-top:0!important}
+.rl-shared-body .rl470-sectionhead:first-of-type{margin-top:0!important}
+/* Form controls: same type size, but keep each screen's behavior and selection colors. */
+.rl-shared-body :is(.rl466-main,.rl-review-content,.rank-content,.rl470-content) :is(button,select,input),
+.rl-shared-body .rl-horse .content :is(button,select,input){font-family:inherit;font-size:13px}
+/* The dashboard is an intentional hero, but aligns to the same content grid. */
+.rl-shared-body .rl-hero{min-height:0!important;margin:0 0 32px!important;padding:0!important}
+.rl-shared-body .rl-hero h1{margin:14px 0 10px!important}
+.rl-shared-body .rl-hero p{font-size:var(--rl-body-size)!important}
+.rl-shared-body .rl-section-heading{margin:26px 0 14px!important}
+.rl-shared-body .rl-hero + .rl-section-heading{margin-top:0!important}
+/* Prevent inherited page-specific text sizing from expanding the shared shell. */
+.rl-shared-body :is(.rl-content,.rl466-main,.rl-review-content,.rank-content,.rl470-content) :is(p,li){line-height:1.7}
+@media(max-width:760px){
+  .rl-shared-shell{display:block;--rl-page-gutter:16px;--rl-page-top:26px;--rl-title-size:26px;--rl-header-height:48px}
+  .rl-shared-sidebar{position:relative;top:auto;width:100%;height:auto;min-height:0;padding:13px 12px 9px;border-right:0;border-bottom:1px solid #26374a}
+  .rl-shared-logo{margin:0 5px 12px;font-size:14px}
+  .rl-shared-caption,.rl-shared-footer{display:none}
+  .rl-shared-nav{display:flex;overflow-x:auto;gap:6px;scrollbar-width:thin}
+  .rl-shared-link{padding:10px 12px;font-size:11px;gap:7px}
+  .rl-shared-icon{font-size:14px;width:auto;flex:auto}
+  .rl-shared-body .rl-hero-emblem{display:none}
+  .rl-shared-body .rank-heading{flex-direction:column;align-items:flex-start}
+}

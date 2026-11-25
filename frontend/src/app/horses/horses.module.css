@@ -1,0 +1,133 @@
+.page {
+  max-width: 1120px;
+  margin: auto;
+  padding: clamp(16px, 4vw, 40px);
+  color: #eaf3ff;
+}
+.page h1 { margin: 0 0 20px; font-size: 2rem; }
+.page h2 { margin: 0 0 12px; font-size: 1.15rem; }
+.page h3 { font-size: .95rem; }
+.page a { color: #65e3b3; text-decoration: underline; text-underline-offset: .2em; }
+.search, .panel {
+  background: #111d2e;
+  border: 1px solid #26374a;
+  border-radius: 12px;
+  padding: clamp(14px, 3vw, 24px);
+  margin-bottom: 16px;
+}
+.search label { display: block; font-weight: 700; margin-bottom: 8px; }
+.search div { display: flex; gap: 8px; max-width: 560px; }
+.search input {
+  min-width: 0; flex: 1; border: 1px solid #58718a; border-radius: 8px;
+  background: #090f1c; color: inherit; padding: 10px 12px; font: inherit;
+}
+.search button {
+  border: 0; border-radius: 8px; background: #34d399; color: #052e24;
+  padding: 10px 18px; font: inherit; font-weight: 800; cursor: pointer;
+}
+.muted, .page small, .matches span, .facts dt { color: #a9bed6; }
+.matches, .generations ul { margin: 0; padding: 0; list-style: none; }
+.matches li {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px;
+  padding: 10px 0; border-bottom: 1px solid #26374a;
+}
+.matches span, .page small { font-size: .82rem; }
+.pagination { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; }
+.facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 12px; margin-bottom: 0;
+}
+.facts div { border-left: 2px solid #34d399; padding-left: 10px; overflow-wrap: anywhere; }
+.facts dd { margin: 4px 0 0; }
+.tableScroll { overflow-x: auto; }
+.page table { width: 100%; min-width: 460px; border-collapse: collapse; text-align: left; }
+.page th, .page td { border-bottom: 1px solid #26374a; padding: 10px 8px; vertical-align: top; }
+.page td small { display: block; margin-bottom: 4px; }
+.generations { display: grid; grid-template-columns: repeat(5, minmax(145px, 1fr)); gap: 8px; min-width: 760px; }
+.generations section { background: #0b1525; border: 1px solid #26374a; border-radius: 8px; min-width: 0; }
+.generations h3 { margin: 0; padding: 10px; background: #18263b; }
+.generations li { border-top: 1px solid #26374a; padding: 8px 10px; overflow-wrap: anywhere; }
+.generations li small { display: block; }
+.error { border: 1px solid #9c4655; background: #271923; color: #ffd4da; padding: 14px; border-radius: 8px; }
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.filters label { display: grid; align-content: start; gap: 4px; min-width: 0; }
+.filters input, .filters select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #58718a;
+  border-radius: 8px;
+  background: #090f1c;
+  color: inherit;
+  font: inherit;
+}
+.filterActions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.filterActions button {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #34d399;
+  color: #052e24;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.generations li > span { display: block; line-height: 1.45; }
+.tableScroll:focus-visible { outline: 2px solid #65e3b3; outline-offset: 2px; }
+
+@media (max-width: 600px) {
+  .page { min-width: 0; }
+  .search input, .filters input, .filters select { min-height: 44px; font-size: 16px; }
+  .search button { min-height: 44px; padding-inline: 12px; }
+  .matches li { flex-direction: column; }
+  .matches a, .pagination a { padding-block: 8px; overflow-wrap: anywhere; }
+  .facts { grid-template-columns: repeat(auto-fit, minmax(min(100%, 112px), 1fr)); }
+  .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .page .historyTable { min-width: 0; table-layout: fixed; font-size: .875rem; }
+  .historyTable th, .historyTable td { padding: 8px 4px; overflow-wrap: anywhere; }
+  .historyTable th:first-child { width: 38%; }
+  .historyTable th:nth-child(2) { width: 13%; }
+  .historyTable th:nth-child(3) { width: 22%; }
+}
+
+.ancestryActions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px; }
+.ancestryActions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid #58718a;
+  border-radius: 8px;
+}
+.ancestryActions a[aria-current="page"] { background: #183c37; border-color: #65e3b3; }
+.lineage, .siblingList { list-style: none; padding: 0; }
+.lineage li, .siblingList li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1px solid #26374a;
+  overflow-wrap: anywhere;
+}
+.lineage li { grid-template-columns: minmax(118px, auto) minmax(0, 1fr); }
+.lineage li small { grid-column: 2; }
+@media (max-width: 600px) {
+  .lineage li { grid-template-columns: minmax(0, 1fr); }
+  .lineage li small { grid-column: 1; }
+}
+
+.page .analysisTable { min-width: 680px; }
+.analysisTable th[scope="row"] { overflow-wrap: anywhere; }
+.analysisQuality { margin-top: 16px; }
+.analysisQuality summary { cursor: pointer; font-weight: 700; }
+.analysisQuality p { overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .page .analysisTable { min-width: 590px; font-size: .875rem; }
+}

@@ -1,36 +1,60 @@
-
-import { NextResponse } from "next/server";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
+﻿import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  try {
-    const filePath = path.resolve(
-      process.cwd(),
-      "..",
-      "database",
-      "races.json"
-    );
+  const supabase = await createClient();
 
-    const content = await readFile(filePath, "utf-8");
-    const races = JSON.parse(content);
+  const { data: { user }, error: authError } =
+    await supabase.auth.getUser();
 
-    if (!Array.isArray(races)) {
-      throw new Error("Invalid race data");
-    }
-
-    return NextResponse.json({
-      success: true,
-      count: races.length,
-      races,
-    });
-  } catch {
+  if (authError || !user) {
     return NextResponse.json(
-      {
-        success: false,
-        error: "レースデータを読み込めませんでした",
-      },
+      { success: false, error: "ログインが必要です" },
+      { status: 401 }
+    );
+  }
+
+  const today = new Date().toLocaleDateString("sv-SE", {
+    timeZone: "Asia/Tokyo",
+  });
+
+  const { data: rows, error } = await supabase
+    .from("horse_races")
+    .select(
+      "id,race_date,venue,race_number,race_name,is_test,data_source,horse_entries(horse_number,horse_name)"
+    )
+    .eq("is_test", false)
+    .gte("race_date", today)
+    .order("race_date", { ascending: true })
+    .order("venue", { ascending: true })
+    .order("race_number", { ascending: true })
+    .limit(500);
+
+  if (error) {
+    console.error("レース取得失敗", error);
+    return NextResponse.json(
+      { success: false, error: "レースデータを取得できませんでした" },
       { status: 500 }
     );
   }
+
+  const races = (rows ?? []).map((r) => ({
+    race_id: r.id,
+    sport: "horse",
+    date: r.race_date,
+    venue: r.venue,
+    race_number: r.race_number,
+    horses: (r.horse_entries ?? [])
+      .map((h) => ({
+        number: h.horse_number,
+        name: h.horse_name,
+      }))
+      .sort((a, b) => (a.number ?? 999) - (b.number ?? 999)),
+  }));
+
+  return NextResponse.json({
+    success: true,
+    count: races.length,
+    races,
+  });
 }

@@ -1,0 +1,31 @@
+/* RACE LAB Step468: scoped review page visual layer. No data logic changes. */
+.rl-review-shell{--rl-bg:#0a1220;--rl-card:#111f31;--rl-line:#26384d;--rl-mint:#2ed6ad;--rl-muted:#8da7c5;min-height:100vh;background:var(--rl-bg);color:#f0f6ff;font-family:Arial,"Noto Sans JP",sans-serif;display:flex}
+.rl-review-shell *{box-sizing:border-box}
+.rl-review-sidebar{position:sticky;top:0;align-self:flex-start;width:174px;min-width:174px;height:100vh;border-right:1px solid #223246;background:#0c1726;padding:22px 12px;display:flex;flex-direction:column;gap:24px}
+.rl-review-logo{font-size:14px;letter-spacing:2px;font-weight:900;color:#eff7ff!important;text-decoration:none!important;padding:0 7px}
+.rl-review-logo span,.rl-review-title-dot{color:var(--rl-mint)}
+.rl-review-nav-label{font-size:10px;letter-spacing:1.5px;color:#718bab;font-weight:800;padding:0 7px}
+.rl-review-sidebar nav{display:grid;gap:5px}
+.rl-review-sidebar nav a{display:block;color:#a5c0dc;text-decoration:none;padding:13px 9px;font-size:12px;font-weight:700;border-radius:7px}
+.rl-review-sidebar nav a:hover,.rl-review-sidebar nav a.active{background:#123b38;color:#40e5bc}
+.rl-review-sidebar-foot{margin-top:auto;font-size:9px;color:#7c98b6;letter-spacing:1px}
+.rl-review-main{flex:1;min-width:0}
+.rl-review-topbar{height:46px;border-bottom:1px solid #243449;display:flex;align-items:center;justify-content:space-between;padding:0 28px;color:#7b9cc2;font-size:10px;font-weight:800;letter-spacing:1.4px}
+.rl-review-topbar a{color:#8fb0d5;text-decoration:none}
+.rl-review-content{max-width:1200px;margin:0 auto;padding:34px 34px 90px}
+.rl-review-eyebrow{color:var(--rl-mint);font-size:10px;font-weight:900;letter-spacing:1.6px;margin:0 0 16px}
+.rl-review-content>h1{font-size:32px;letter-spacing:-1px;margin:0 0 12px;font-weight:900}
+.rl-review-content>p{line-height:1.8;max-width:900px}
+.rl-review-content>section,.rl-review-content>div>section{background:var(--rl-card)!important;border:1px solid var(--rl-line);border-radius:12px!important;box-shadow:0 5px 18px #00000012}
+.rl-review-content section h2{font-size:17px;margin:0 0 18px;color:#f3f8ff}
+.rl-review-content section p{line-height:1.7;margin:10px 0}
+.rl-review-content section section{border:1px solid var(--rl-line)}
+.rl-review-content section div[style*="background"]{border:1px solid #23364c}
+.rl-review-content select,.rl-review-content input{background:#0c192a!important;color:#eaf5ff!important;border:1px solid #354e69!important;border-radius:7px!important;min-height:36px}
+.rl-review-content button{border:1px solid #2a5e61;border-radius:7px;background:#153d3e;color:#61eac8;font-weight:800;cursor:pointer}
+.rl-review-content button:hover:not(:disabled){filter:brightness(1.2)}
+.rl-review-content button:disabled{opacity:.5;cursor:not-allowed}
+.rl-review-content button:focus-visible,.rl-review-content a:focus-visible,.rl-review-content select:focus-visible,.rl-review-content input:focus-visible{outline:2px solid var(--rl-mint);outline-offset:3px}
+.rl-review-content a{color:#65e3c4}
+@media(max-width:800px){.rl-review-sidebar{width:62px;min-width:62px;padding:18px 6px}.rl-review-logo{font-size:10px;letter-spacing:0}.rl-review-nav-label,.rl-review-sidebar-foot{display:none}.rl-review-sidebar nav a{font-size:10px;padding:12px 3px;overflow-wrap:anywhere}.rl-review-content{padding:24px 14px 60px}.rl-review-topbar{padding:0 12px;font-size:9px}.rl-review-content>h1{font-size:26px}.rl-review-content section{padding:14px!important}}
+@media(max-width:500px){.rl-review-shell{display:block}.rl-review-sidebar{position:static;width:100%;height:auto;min-width:0;padding:12px}.rl-review-sidebar nav{display:flex;overflow-x:auto;gap:4px}.rl-review-sidebar nav a{white-space:nowrap;font-size:11px;padding:9px}.rl-review-topbar{height:35px}.rl-review-content{padding:20px 10px 55px}}
