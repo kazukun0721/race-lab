@@ -22,6 +22,10 @@ export default function MyPage() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState("");
   const [theme, setThemeState] = useState<"dark" | "light">("dark");
+  const [displayName, setDisplayName] = useState("");
+  const [nameInput, setNameInput] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameMessage, setNameMessage] = useState("");
 
   useEffect(() => {
     const isLight =
@@ -53,6 +57,12 @@ export default function MyPage() {
         }
         setEmail(data.user.email ?? "未登録");
         setUserId(data.user.id);
+        const { data: member } = await supabase.from("group_members").select("display_name").eq("user_id", data.user.id).maybeSingle();
+        if (!active) return;
+        if (member?.display_name) {
+          setDisplayName(member.display_name);
+          setNameInput(member.display_name);
+        }
       } catch {
         if (active) setError("ログイン状態を確認できませんでした。");
       } finally {
@@ -80,6 +90,31 @@ export default function MyPage() {
       setError("ログアウトに失敗しました。通信状態をご確認ください。");
     } finally {
       setLoggingOut(false);
+    }
+  }
+
+  async function handleSaveName() {
+    const next = nameInput.trim();
+    if (!next || nameSaving) return;
+    if (next.length > 30) {
+      setNameMessage("表示名は30文字以内にしてください。");
+      return;
+    }
+    setNameSaving(true);
+    setNameMessage("");
+    try {
+      const supabase = createClient();
+      const { error: rpcError } = await supabase.rpc("set_my_display_name", { p_display_name: next });
+      if (rpcError) {
+        setNameMessage("保存に失敗しました。メンバー登録が有効か確認してください。");
+        return;
+      }
+      setDisplayName(next);
+      setNameMessage("表示名を保存しました。ランキングにも反映されます。");
+    } catch {
+      setNameMessage("保存に失敗しました。通信状態をご確認ください。");
+    } finally {
+      setNameSaving(false);
     }
   }
 
@@ -118,13 +153,22 @@ export default function MyPage() {
                   <div className="rl470-avatar" aria-hidden="true">R.</div>
                   <div>
                     <div className="rl470-small">MEMBER ACCOUNT</div>
-                    <div className="rl470-profiletitle">RACE LAB メンバー</div>
+                    <div className="rl470-profiletitle">{displayName || "RACE LAB メンバー"}</div>
                     <div className="rl470-status"><span aria-hidden="true">●</span> ログイン中</div>
                   </div>
                 </div>
                 <div className="rl470-info-grid">
                   <div className="rl470-info"><div className="rl470-small">メールアドレス</div><div className="rl470-value">{email}</div></div>
+                  <div className="rl470-info"><div className="rl470-small">表示名（ランキング表示）</div><div className="rl470-value">{displayName || "未設定"}</div></div>
                   <div className="rl470-info"><div className="rl470-small">ユーザーID</div><div className="rl470-value">{userId ? `${userId.slice(0, 8)}…` : "未取得"}</div></div>
+                </div>
+                <div className="rl470-nameedit">
+                  <label className="rl470-small" htmlFor="display-name-input">表示名を変更</label>
+                  <div className="rl470-namerow">
+                    <input id="display-name-input" className="rl470-nameinput" type="text" value={nameInput} maxLength={30} onChange={e => setNameInput(e.target.value)} placeholder="表示名を入力" />
+                    <button type="button" className="rl470-namesave" onClick={() => void handleSaveName()} disabled={nameSaving || !nameInput.trim() || nameInput.trim() === displayName}>{nameSaving ? "保存中..." : "保存する"}</button>
+                  </div>
+                  {nameMessage && <p className="rl470-muted" role="status">{nameMessage}</p>}
                 </div>
               </>
             )}
@@ -197,6 +241,11 @@ export default function MyPage() {
         .rl470-session{display:flex;align-items:center;justify-content:space-between;gap:20px}.rl470-session strong{font-size:14px}.rl470-muted{font-size:12px;color:var(--rl-muted);line-height:1.6;margin-top:7px}
         .rl470-logout{border:1px solid var(--rl-danger-border);border-radius:7px;background:var(--rl-hover);color:var(--rl-danger-text);padding:12px 18px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.rl470-logout:hover{background:var(--rl-danger-bg)}.rl470-logout:disabled{opacity:.5;cursor:wait}
         .rl470-error{color:var(--rl-danger-text);margin-top:14px;font-size:13px}.rl470-footer{font-size:10px;letter-spacing:1px;color:var(--rl-faint);margin-top:32px;text-align:center}
+        .rl470-nameedit{margin-top:18px;border-top:1px solid var(--rl-border);padding-top:18px}
+        .rl470-namerow{display:flex;gap:10px;margin-top:10px}
+        .rl470-nameinput{flex:1;min-width:0;background:var(--rl-bg);border:1px solid var(--rl-border);border-radius:7px;color:var(--rl-text);padding:12px;font-size:14px}
+        .rl470-namesave{border:1px solid var(--rl-accent);border-radius:7px;background:var(--rl-accent-bg);color:var(--rl-accent-bright);padding:12px 18px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+        .rl470-namesave:disabled{opacity:.5;cursor:default}
         @media(max-width:760px){.rl470-sidebar{width:60px;flex-basis:60px;padding:14px 5px}.rl470-brand{font-size:9px;padding:0 0 22px;text-align:center}.rl470-sidecaption,.rl470-sidefooter{display:none}.rl470-navitem{justify-content:center;padding:12px 0;font-size:0;gap:0}.rl470-navitem>span{font-size:20px;width:auto}.rl470-content{width:calc(100% - 28px);padding-top:26px}.rl470-topbar{padding:0 14px}.rl470-cards{grid-template-columns:1fr}.rl470-card{min-height:115px}.rl470-info-grid{grid-template-columns:1fr}.rl470-session{align-items:flex-start;flex-direction:column}.rl470-content h1{font-size:25px}}
       `}</style>
     </div>
