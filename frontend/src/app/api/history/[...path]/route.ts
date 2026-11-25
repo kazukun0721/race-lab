@@ -23,9 +23,9 @@ export async function GET(
     );
   }
 
-  const url = new URL(
-    `http://127.0.0.1:8765/api/history/${path.join("/")}`
-  );
+  const base =
+    process.env.RACE_LAB_DATA_CENTER_URL ?? "http://127.0.0.1:8765";
+  const url = new URL(`/api/history/${path.join("/")}`, base);
 
   request.nextUrl.searchParams.forEach((value, key) => {
     if (
@@ -40,6 +40,9 @@ export async function GET(
     const response = await fetch(url, {
       cache: "no-store",
       signal: AbortSignal.timeout(15000),
+      headers: process.env.RACE_LAB_DATA_CENTER_KEY
+        ? { "x-racelab-key": process.env.RACE_LAB_DATA_CENTER_KEY }
+        : undefined,
     });
 
     const body = await response.text();
