@@ -243,8 +243,9 @@ function HorseAnalysis({ history }: { history: HorseHistory[] }) {
 
 export default function HistoryPage() {
   const [year, setYear] = useState("2026");
-  const [offset, setOffset] = useState(0);
   const [races, setRaces] = useState<Race[]>([]);
+  const [dates, setDates] = useState<string[]>([]);
+  const [month, setMonth] = useState("");
   const [date, setDate] = useState("");
   const [venue, setVenue] = useState("");
   const [raceId, setRaceId] = useState("");
@@ -257,22 +258,20 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const load = useCallback(async (selectedYear: string, nextOffset: number) => {
+  const loadDate = useCallback(async (selectedDate: string) => {
     setLoading(true);
     setError("");
     setHorse(null);
     setRaceEntries(null);
     setRaceId("");
+    setVenue("");
 
     try {
       const result = await api<{ items: Race[] }>(
-        `/api/history/races?year=${selectedYear}&limit=${pageSize}&offset=${nextOffset}`
+        `/api/history/races?date=${selectedDate}&limit=${pageSize}`
       );
 
       setRaces(result.items);
-      setOffset(nextOffset);
-      setDate("");
-      setVenue("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "レースを取得できません");
       setRaces([]);
@@ -281,23 +280,58 @@ export default function HistoryPage() {
     }
   }, []);
 
+  const loadYear = useCallback(async (selectedYear: string) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const result = await api<{ items: string[] }>(
+        `/api/history/dates?year=${selectedYear}`
+      );
+
+      setDates(result.items);
+      const first = result.items[0] || "";
+      setDate(first);
+      setMonth(first.slice(0, 7));
+
+      if (first) {
+        await loadDate(first);
+      } else {
+        setRaces([]);
+        setLoading(false);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "開催日を取得できません");
+      setDates([]);
+      setRaces([]);
+      setLoading(false);
+    }
+  }, [loadDate]);
+
   useEffect(() => {
     let cancelled = false;
     void Promise.resolve().then(() => {
-      if (!cancelled) return load("2026", 0);
+      if (!cancelled) return loadYear("2026");
     });
     void api<Stats>("/api/history/stats")
       .then(data => { if (!cancelled) setStats(data); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [load]);
+  }, [loadYear]);
 
-  const dates = useMemo(
-    () => [...new Set(races.map(r => r.race_date))].sort().reverse(),
-    [races]
+  const months = useMemo(
+    () => [...new Set(dates.map(d => d.slice(0, 7)))],
+    [dates]
   );
 
   const selectedDate = dates.includes(date) ? date : (dates[0] || "");
+  const selectedMonth = months.includes(month)
+    ? month
+    : (selectedDate.slice(0, 7) || "");
+  const daysInMonth = useMemo(
+    () => dates.filter(d => d.slice(0, 7) === selectedMonth),
+    [dates, selectedMonth]
+  );
 
   const venues = useMemo(
     () => [...new Set(
@@ -409,11 +443,30 @@ export default function HistoryPage() {
                 onChange={e => {
                   const next = e.target.value;
                   setYear(next);
-                  void load(next, 0);
+                  void loadYear(next);
                 }}
               >
                 {Array.from({ length: 41 }, (_, i) => 2026 - i).map(y => (
                   <option value={y} key={y}>{y}年</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>開催月</span>
+              <select
+                value={selectedMonth}
+                onChange={e => {
+                  const nextMonth = e.target.value;
+                  setMonth(nextMonth);
+                  const target = dates.find(d => d.slice(0, 7) === nextMonth) || "";
+                  setDate(target);
+                  if (target) void loadDate(target);
+                }}
+                disabled={!months.length}
+              >
+                {months.map(m => (
+                  <option value={m} key={m}>{m.replace("-", "年")}月</option>
                 ))}
               </select>
             </label>
@@ -424,33 +477,17 @@ export default function HistoryPage() {
                 value={selectedDate}
                 onChange={e => {
                   setDate(e.target.value);
-                  setVenue("");
-                  setRaceId("");
-                  setHorse(null);
+                  void loadDate(e.target.value);
                 }}
-                disabled={!dates.length}
+                disabled={!daysInMonth.length}
               >
-                {dates.map(d => <option value={d} key={d}>{d}</option>)}
+                {daysInMonth.map(d => (
+                  <option value={d} key={d}>
+                    {`${Number(d.slice(8, 10))}日（${"日月火水木金土"[new Date(`${d}T00:00:00`).getDay()]}）`}
+                  </option>
+                ))}
               </select>
             </label>
-
-            <div className="rh-page-controls">
-              <span>データ範囲</span>
-              <div>
-                <button
-                  disabled={loading || offset === 0}
-                  onClick={() => void load(year, Math.max(0, offset - pageSize))}
-                >
-                  ← 新しい開催
-                </button>
-                <button
-                  disabled={loading || races.length < pageSize}
-                  onClick={() => void load(year, offset + pageSize)}
-                >
-                  古い開催 →
-                </button>
-              </div>
-            </div>
           </div>
 
           <div className="rh-filter-label">競馬場</div>
