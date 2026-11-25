@@ -347,9 +347,18 @@ async function HomeView({ tab }: { tab: string }) {
   } catch {
     data = null;
   }
+  const pickRandom = (arr: PickupHorse[], n: number) => {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy.slice(0, n);
+  };
   const spot = data && data.spotlight_pool.length
     ? data.spotlight_pool[Math.floor(Math.random() * data.spotlight_pool.length)]
     : null;
+  const allList = data ? pickRandom(data.all_time_pool, 10) : [];
   return <>
     {spot && data && <section className={styles.panel}>
       <h2>今日のピックアップ</h2>
@@ -360,6 +369,15 @@ async function HomeView({ tab }: { tab: string }) {
       <p className={styles.muted}>歴代勝利数ベスト50からランダム表示（{data.as_of}時点の集計）</p>
     </section>}
     <section className={styles.panel}>
+      <h2>血統検索</h2>
+      <p className={styles.muted}>父・母父の名前で検索すると、その産駒を勝利数順に表示します。</p>
+      <form action="/horses" className={styles.search} role="search">
+        <label htmlFor="sire-q">父・母父の名前（部分一致）</label>
+        <div><input id="sire-q" name="sire" type="search" maxLength={64} required placeholder="例：ディープインパクト"/>
+          <button type="submit">産駒を検索</button></div>
+      </form>
+    </section>
+    <section className={styles.panel}>
       <h2>強馬ランキング</h2>
       <nav className={styles.ancestryActions} aria-label="ランキングの切り替え">
         {tabs.map(t => <Link prefetch={false} key={t.key} aria-current={t.key === active ? "page" : undefined}
@@ -367,11 +385,14 @@ async function HomeView({ tab }: { tab: string }) {
       </nav>
       {!data ? <p className={styles.muted}>ピックアップ情報を取得できませんでした。PCのDATA CENTERが起動しているときに表示されます。</p>
       : active === "gen" ? <ul className={styles.siblingList}>
-          {data.generations.map(g => <li key={g.year}>
-            <div><Link prefetch={false} href={url({horse:g.horse.horse_id})}>{g.horse.name}</Link>
-              <small> {g.year}年生まれ世代</small></div>
-            <span>{pickupLine(g.horse)}</span>
-          </li>)}
+          {data.generations.map(g => {
+            const h = g.candidates[Math.floor(Math.random() * g.candidates.length)];
+            return <li key={g.year}>
+              <div><Link prefetch={false} href={url({horse:h.horse_id})}>{h.name}</Link>
+                <small> {g.year}年生まれ世代</small></div>
+              <span>{pickupLine(h)}</span>
+            </li>;
+          })}
         </ul>
       : active === "dark" ? <ul className={styles.siblingList}>
           {data.dark_horses.map(h => <li key={h.horse_id}>
@@ -381,21 +402,14 @@ async function HomeView({ tab }: { tab: string }) {
               ? ` · 最高 ${h.best_odds}倍（${h.best_win.race_date} ${h.best_win.race_name || "一般競走"}）` : ""}</span>
           </li>)}
         </ul>
-      : pickupList(active === "recent" ? data.recent : data.all_time)}
+      : pickupList(active === "recent" ? data.recent : allList)}
       {data && <p className={styles.muted}>{active === "recent"
         ? `集計対象は直近5年（${data.as_of}まで）の出走です。`
         : active === "dark"
           ? "過去データ（TARGET収録分）の単勝オッズで集計しています。"
-          : "集計はDATA CENTER収録レース（1986年以降）が対象です。"}</p>}
-    </section>
-    <section className={styles.panel}>
-      <h2>血統検索</h2>
-      <p className={styles.muted}>父・母父の名前で検索すると、その産駒を勝利数順に表示します。</p>
-      <form action="/horses" className={styles.search} role="search">
-        <label htmlFor="sire-q">父・母父の名前（部分一致）</label>
-        <div><input id="sire-q" name="sire" type="search" maxLength={64} required placeholder="例：ディープインパクト"/>
-          <button type="submit">産駒を検索</button></div>
-      </form>
+          : active === "gen"
+            ? "各世代の勝利数上位（原則5戦以上）から、ランダムで1頭ずつ表示しています。"
+            : "歴代勝利数ベスト60からランダムで10頭表示しています。"}</p>}
     </section>
   </>;
 }

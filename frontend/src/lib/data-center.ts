@@ -166,9 +166,9 @@ export type PickupHorse = {
 export type Pickups = {
   as_of: string;
   spotlight_pool: PickupHorse[];
-  all_time: PickupHorse[];
+  all_time_pool: PickupHorse[];
   recent: PickupHorse[];
-  generations: { year: string; horse: PickupHorse }[];
+  generations: { year: string; candidates: PickupHorse[] }[];
   dark_horses: PickupHorse[];
 };
 export const horsePickups = () =>
