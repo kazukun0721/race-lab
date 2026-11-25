@@ -55,12 +55,6 @@ type HorseHistory = {
   target_metrics?: TargetMetrics | null;
 };
 
-type HorseSearchResult = {
-  horse_id: string;
-  horse_name: string;
-  race_date: string;
-};
-
 type HorseDetail = {
   horse_id: string;
   horse_name: string;
@@ -256,12 +250,6 @@ export default function HistoryPage() {
   const [raceId, setRaceId] = useState("");
   const [raceEntries, setRaceEntries] = useState<{ id: string; items: Entry[] } | null>(null);
   const [horse, setHorse] = useState<HorseDetail | null>(null);
-  const [horseQuery, setHorseQuery] = useState("");
-  const [horseResults, setHorseResults] = useState<{
-    items: HorseSearchResult[];
-    has_more: boolean;
-  } | null>(null);
-  const [horseSearching, setHorseSearching] = useState(false);
   const [horseLoading, setHorseLoading] = useState(false);
   const [horseError, setHorseError] = useState("");
   const horsePanel = useRef<HTMLDivElement>(null);
@@ -358,24 +346,6 @@ export default function HistoryPage() {
     if (horse) horsePanel.current?.scrollIntoView({ block: "start" });
   }, [horse]);
 
-  async function searchHorses() {
-    const q = horseQuery.trim();
-    if (!q) return;
-    setHorseSearching(true);
-    setHorseError("");
-    setHorseResults(null);
-    try {
-      const result = await api<{ items: HorseSearchResult[]; has_more: boolean }>(
-        `/api/history/horses?${new URLSearchParams({ q })}`
-      );
-      setHorseResults(result);
-    } catch (e) {
-      setHorseError(e instanceof Error ? e.message : "馬を検索できません");
-    } finally {
-      setHorseSearching(false);
-    }
-  }
-
   async function openHorse(id: string) {
     setHorseLoading(true);
     setHorseError("");
@@ -424,51 +394,6 @@ export default function HistoryPage() {
             ))}
           </div>
         )}
-
-        <div className="rh-section-heading">
-          <h2>馬を探す</h2>
-        </div>
-        <section className="rh-panel rh-horse-search">
-          <form onSubmit={e => {
-            e.preventDefault();
-            void searchHorses();
-          }}>
-            <label htmlFor="rh-horse-query">馬名（部分一致）または血統登録番号（10桁）</label>
-            <div className="rh-horse-search-controls">
-              <input
-                id="rh-horse-query"
-                type="search"
-                value={horseQuery}
-                maxLength={80}
-                onChange={e => setHorseQuery(e.target.value)}
-                disabled={horseSearching}
-              />
-              <button type="submit" disabled={horseSearching || !horseQuery.trim()}>
-                {horseSearching ? "検索中…" : "検索"}
-              </button>
-            </div>
-          </form>
-          {horseError && <p className="rh-horse-error" role="alert">{horseError}</p>}
-          {horseLoading && <p className="rh-muted" role="status">馬の戦績を読み込み中…</p>}
-          {horseResults && (
-            <>
-              {horseResults.items.length ? (
-                <ul className="rh-horse-results">
-                  {horseResults.items.map(item => (
-                    <li key={item.horse_id}>
-                      <button type="button" disabled={horseLoading}
-                        onClick={() => void openHorse(item.horse_id)}>
-                        <strong>{item.horse_name}</strong>
-                        <span>{item.horse_id} / 一致した出走 {item.race_date}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : <p className="rh-muted" role="status">馬IDを確認できる該当馬が見つかりません。</p>}
-              {horseResults.has_more && <p className="rh-muted">上位25件を表示中。馬名を絞って検索できます。</p>}
-            </>
-          )}
-        </section>
 
         <div className="rh-section-heading">
           <h2><span>01</span> 開催条件を選択</h2>
@@ -656,6 +581,8 @@ export default function HistoryPage() {
           </>
         )}
 
+        {horseError && <p className="rh-horse-error" role="alert">{horseError}</p>}
+        {horseLoading && <p className="rh-muted" role="status">馬の戦績を読み込み中…</p>}
         {horse && (
           <>
             <div className="rh-section-heading" ref={horsePanel}>
