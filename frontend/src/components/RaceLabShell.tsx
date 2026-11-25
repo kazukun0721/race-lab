@@ -10,6 +10,7 @@ const items = [
   { href: "/races/auto", label: "レース一覧", symbol: "▤" },
   { href: "/history", label: "過去データ", symbol: "▦" },
   { href: "/horses", label: "馬検索", symbol: "◇" },
+  { href: "/quiz", label: "馬クイズ", symbol: "？" },
   { href: "/races/horse", label: "AI予測", symbol: "◎" },
   { href: "/review", label: "予測レビュー", symbol: "▥" },
   { href: "/ranking", label: "ランキング", symbol: "▦" },
