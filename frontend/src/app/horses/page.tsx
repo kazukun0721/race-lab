@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import {
-  ancestorDetails, ancestorLineage, horseDetails, horsePickups, horseSiblings, HorseDataError, historyFilterKeys, sireSearch,
+  ancestorDetails, ancestorLineage, historyHorseDetail, horseDetails, horsePickups, horseSiblings, HorseDataError, historyFilterKeys, sireSearch,
   isHorseId, pedigreeForHorse, raceDetails, searchHorses,
-  type Ancestor, type HistoryFilters, type Line, type PedigreeSlot, type PickupHorse, type Pickups, type Relation, type Result, type SireHit,
+  type Ancestor, type HistoryFilters, type HistoryHorseDetail, type HistoryRun, type Line, type PedigreeSlot, type PickupHorse, type Pickups, type Relation, type Result, type SireHit,
 } from "@/lib/data-center";
 import { createClient } from "@/lib/supabase/server";
 import styles from "./horses.module.css";
@@ -100,19 +100,28 @@ function ResultsTable({ rows, horseId, historyOffset, filters }: {
   rows: Result[]; horseId?: string; historyOffset?: number; filters?: HistoryFilters;
 }) {
   if (!rows.length) return <p>該当する出走・結果はありません。</p>;
-  return <div className={styles.tableScroll} tabIndex={0} role="region" aria-label={horseId ? "出走履歴一覧" : "レース結果一覧"}>
-    <table className={horseId ? styles.historyTable : undefined}>
-      <thead><tr><th scope="col">{horseId ? "レース" : "馬名"}</th><th scope="col">馬番</th>
+  if (horseId) {
+    return <div className={styles.tableScroll} tabIndex={0} role="region" aria-label="出走履歴一覧">
+      <table className={styles.oneline}>
+        <thead><tr><th scope="col">日付</th><th scope="col">場所</th><th scope="col">レース</th>
+          <th scope="col">条件</th><th scope="col">馬番</th><th scope="col">着順</th><th scope="col">騎手</th></tr></thead>
+        <tbody>{rows.map((row) => <tr key={row.race_id+"-"+row.horse_number+"-"+row.horse_id}>
+          <td>{row.race_date}</td>
+          <td>{venues[row.race_id.slice(8,10)] ?? row.race_id.slice(8,10)} {Number(row.race_id.slice(14))}R</td>
+          <td><Link prefetch={false} href={url({...filters,race:row.race_id,from:horseId,historyOffset:historyOffset ?? 0})}>
+            {row.race_name || Number(row.race_id.slice(14))+"R"}</Link></td>
+          <td>{[row.surface && surfaces[row.surface], row.distance_m && row.distance_m + "m"].filter(Boolean).join(" ")}</td>
+          <td>{row.horse_number}</td><td>{placing(row)}</td><td>{row.jockey_name || "—"}</td>
+        </tr>)}</tbody>
+      </table>
+    </div>;
+  }
+  return <div className={styles.tableScroll} tabIndex={0} role="region" aria-label="レース結果一覧">
+    <table>
+      <thead><tr><th scope="col">馬名</th><th scope="col">馬番</th>
         <th scope="col">着順・状態</th><th scope="col">騎手</th></tr></thead>
       <tbody>{rows.map((row) => <tr key={row.race_id+"-"+row.horse_number+"-"+row.horse_id}>
-        <td>{horseId
-          ? <><small>{row.race_date} · {venues[row.race_id.slice(8,10)] ?? row.race_id.slice(8,10)}</small>
-            <Link prefetch={false} href={url({...filters,race:row.race_id,from:horseId,historyOffset:historyOffset ?? 0})}>
-              {row.race_name || Number(row.race_id.slice(14))+"R"}</Link>
-            {(row.surface || row.distance_m) && <small>
-              {[row.surface && surfaces[row.surface], row.distance_m && row.distance_m + "m"].filter(Boolean).join(" · ")}
-            </small>}</>
-          : <Link prefetch={false} href={url({horse:row.horse_id})}>{row.horse_name_at_race || row.horse_id}</Link>}</td>
+        <td><Link prefetch={false} href={url({horse:row.horse_id})}>{row.horse_name_at_race || row.horse_id}</Link></td>
         <td>{row.horse_number}</td><td>{placing(row)}</td><td>{row.jockey_name || "—"}</td>
       </tr>)}</tbody>
     </table>
@@ -155,6 +164,264 @@ function HistoryForm({ id, filters }: { id: string; filters: HistoryFilters }) {
       <Link prefetch={false} href={url({horse:id})}>条件をクリア</Link>
     </div>
   </form>;
+}
+
+
+type FinishedRun = HistoryRun & { finish_position: number };
+const isFinishedRun = (h: HistoryRun): h is FinishedRun =>
+  h.finish_position !== null && h.finish_position > 0;
+
+function RecordTrendChart({ history }: { history: HistoryRun[] }) {
+  const runs = history.filter(isFinishedRun).slice().reverse().slice(-30);
+  if (runs.length < 2) return null;
+  const W = 720, H = 232, PL = 34, PR = 14, PT = 18, PB = 30;
+  const maxFinish = Math.max(10, ...runs.map(r => r.finish_position));
+  const x = (i: number) => PL + (i * (W - PL - PR)) / (runs.length - 1);
+  const y = (f: number) => PT + ((f - 1) * (H - PT - PB)) / (maxFinish - 1);
+  const line = runs.map((r, i) => `${x(i)},${y(r.finish_position)}`).join(" ");
+  const gridVals = [1, 3, 5, 10, 15, 18].filter(v => v <= maxFinish);
+  const dotColor = (f: number) =>
+    f === 1 ? "#e5484d" : f === 2 ? "#4c9aff" : f === 3 ? "#30a46c" : "var(--rl-sub)";
+  return (
+    <div className={styles.recordChart}>
+      <div className={styles.recordTitle}>
+        <strong>FINISH TREND</strong>
+        <span>着順推移 / 直近{runs.length}走（左が古いレース）</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className={styles.chartSvg} role="img" aria-label="着順推移グラフ">
+        <rect x={PL} y={y(1)} width={W - PL - PR} height={Math.max(0, y(3) - y(1) + 6)} className={styles.chartTop3} />
+        {gridVals.map(v => (
+          <g key={v}>
+            <line x1={PL} x2={W - PR} y1={y(v)} y2={y(v)} className={styles.chartGrid} />
+            <text x={PL - 6} y={y(v) + 4} textAnchor="end" className={styles.chartAxis}>{v}</text>
+          </g>
+        ))}
+        <polyline points={line} fill="none" className={styles.chartLine} />
+        {runs.map((r, i) => (
+          <g key={`${r.race_id}-${i}`}>
+            <circle cx={x(i)} cy={y(r.finish_position)} r={4.5} fill={dotColor(r.finish_position)} className={styles.chartDot} />
+            <text x={x(i)} y={y(r.finish_position) - 9} textAnchor="middle" className={styles.chartNum}>{r.finish_position}</text>
+            {(runs.length <= 12 || i % 5 === 0 || i === runs.length - 1) && (
+              <text x={x(i)} y={H - 8} textAnchor="middle" className={styles.chartAxis}>{r.race_date.slice(2, 4)}/{r.race_date.slice(5, 7)}</text>
+            )}
+          </g>
+        ))}
+      </svg>
+      <p className={styles.chartLegend}>上の帯は3着以内の圏内。点の色：<span style={{ color: "#e5484d" }}>1着</span> / <span style={{ color: "#4c9aff" }}>2着</span> / <span style={{ color: "#30a46c" }}>3着</span> / その他</p>
+    </div>
+  );
+}
+
+function buildRecordComment(history: HistoryRun[]): string[] {
+  const sentences: string[] = [];
+  const totalStarts = history.length;
+  const totalWins = history.filter(h => h.finish_position === 1).length;
+  const totalTop3 = history.filter(h => h.finish_position !== null && h.finish_position >= 1 && h.finish_position <= 3).length;
+  const pct = (n: number, d: number) => (d ? Math.round((n / d) * 100) : 0);
+  sentences.push(`通算${totalStarts}戦${totalWins}勝、3着以内${totalTop3}回（勝率${pct(totalWins, totalStarts)}%・3着内率${pct(totalTop3, totalStarts)}%）。`);
+  const valid = history.filter(isFinishedRun);
+  if (valid.length < 3) {
+    sentences.push("着順の付いた戦績が少ないため、得意条件や脚質の分析はまだ十分にできません。");
+    return sentences;
+  }
+  type G = { label: string; starts: number; wins: number; top3: number };
+  function group(cat: (h: HistoryRun) => string | null): G[] {
+    const map = new Map<string, G>();
+    for (const h of valid) {
+      const label = cat(h);
+      if (!label) continue;
+      const row = map.get(label) ?? { label, starts: 0, wins: 0, top3: 0 };
+      row.starts += 1;
+      if (h.finish_position === 1) row.wins += 1;
+      if (h.finish_position <= 3) row.top3 += 1;
+      map.set(label, row);
+    }
+    return [...map.values()];
+  }
+  const surfCat = (h: HistoryRun) => {
+    const s = (h.surface ?? "").trim();
+    if (s.includes("障")) return "障害";
+    if (s.includes("ダート") || s === "ダ") return "ダート";
+    if (s.includes("芝")) return "芝";
+    return null;
+  };
+  const distCat = (h: HistoryRun) => {
+    const d = h.distance_m;
+    if (d == null || d <= 0) return null;
+    if (d < 1400) return "短距離";
+    if (d < 1800) return "マイル前後";
+    if (d < 2400) return "中距離";
+    return "長距離";
+  };
+  const bestOf = (rows: G[], min: number) =>
+    rows.filter(r => r.starts >= min).sort((a, b) => b.top3 / b.starts - a.top3 / a.starts || b.starts - a.starts)[0];
+  const worstOf = (rows: G[], min: number) =>
+    rows.filter(r => r.starts >= min).sort((a, b) => a.top3 / a.starts - b.top3 / b.starts || b.starts - a.starts)[0];
+  const surfaces = group(surfCat);
+  const distances = group(distCat);
+  const venues = group(h => h.venue?.trim() || null);
+  const bs = bestOf(surfaces, 3);
+  if (bs && bs.top3 / bs.starts >= 0.4) {
+    sentences.push(`${bs.label}では${bs.starts}戦${bs.wins}勝・3着内率${pct(bs.top3, bs.starts)}%と安定している。`);
+  }
+  const bd = bestOf(distances, 3);
+  if (bd && bd.top3 / bd.starts >= 0.4) {
+    sentences.push(`距離は${bd.label}が合っており、3着内率${pct(bd.top3, bd.starts)}%。`);
+  }
+  const bv = bestOf(venues, 3);
+  if (bv && bv.top3 / bv.starts >= 0.5) {
+    sentences.push(`${bv.label}競馬場との相性が良く、${bv.starts}戦で3着内率${pct(bv.top3, bv.starts)}%。`);
+  }
+  const worst = worstOf([...surfaces, ...distances], 4);
+  if (worst && worst.top3 / worst.starts <= 0.15) {
+    sentences.push(`一方、${worst.label}では3着内率${pct(worst.top3, worst.starts)}%と苦戦している。`);
+  }
+  const goodGoing = valid.filter(h => (h.going ?? "").includes("良"));
+  const softGoing = valid.filter(h => ["稍", "重", "不"].some(g => (h.going ?? "").includes(g)));
+  const top3Rate = (arr: FinishedRun[]) => (arr.length ? arr.filter(h => h.finish_position <= 3).length / arr.length : 0);
+  if (goodGoing.length >= 3 && softGoing.length >= 3) {
+    if (top3Rate(softGoing) - top3Rate(goodGoing) >= 0.25) {
+      sentences.push("道悪（稍重・重・不良）でも成績が落ちず、むしろ得意なタイプ。");
+    } else if (top3Rate(goodGoing) - top3Rate(softGoing) >= 0.25) {
+      sentences.push("良馬場向きで、道悪では成績が落ちる傾向がある。");
+    }
+  }
+  const firsts = valid
+    .map(h => h.corner_positions.find(c => c !== null))
+    .filter((n): n is number => n != null);
+  if (firsts.length >= 3) {
+    const avg = firsts.reduce((a, b) => a + b, 0) / firsts.length;
+    if (avg <= 3.5) sentences.push("序盤から前に付ける先行型。");
+    else if (avg >= 8) sentences.push("序盤は後方で脚を溜めるタイプ。");
+    else sentences.push("中団で流れに乗るタイプ。");
+  }
+  const recent = valid.slice(0, 5);
+  if (recent.length >= 3) {
+    const list = recent.map(h => h.finish_position).join("・");
+    const rTop3 = recent.filter(h => h.finish_position <= 3).length;
+    if (rTop3 >= 3) {
+      sentences.push(`近${recent.length}走の着順は${list}着（新しい順）と好調を維持している。`);
+    } else if (rTop3 === 0) {
+      sentences.push(`近${recent.length}走の着順は${list}着（新しい順）と3着以内がなく、立て直しが必要な状況。`);
+    } else {
+      sentences.push(`近${recent.length}走の着順は${list}着（新しい順）。`);
+    }
+  }
+  return sentences;
+}
+
+type RecordRow = { label: string; starts: number; wins: number; top3: number };
+
+function RecordAnalysis({ history }: { history: HistoryRun[] }) {
+  function summarize(
+    category: (h: HistoryRun) => string | null,
+    order?: string[]
+  ): RecordRow[] {
+    const groups = new Map<string, RecordRow>();
+    for (const h of history) {
+      const label = category(h);
+      if (!label) continue;
+      const row = groups.get(label) ?? { label, starts: 0, wins: 0, top3: 0 };
+      row.starts += 1;
+      if (h.finish_position === 1) row.wins += 1;
+      if (h.finish_position !== null && h.finish_position >= 1 && h.finish_position <= 3) row.top3 += 1;
+      groups.set(label, row);
+    }
+    const rows = [...groups.values()];
+    return order
+      ? rows.sort((a, b) => order.indexOf(a.label) - order.indexOf(b.label))
+      : rows.sort((a, b) => b.starts - a.starts);
+  }
+  const surfaces = summarize(h => {
+    const s = (h.surface ?? "").trim();
+    if (s.includes("障")) return "障害";
+    if (s.includes("ダート") || s === "ダ") return "ダート";
+    if (s.includes("芝")) return "芝";
+    return s ? "その他" : null;
+  }, ["芝", "ダート", "障害", "その他"]);
+  const distances = summarize(h => {
+    const d = h.distance_m;
+    if (d == null || d <= 0) return null;
+    if (d < 1400) return "短距離（1400m未満）";
+    if (d < 1800) return "マイル前後（1400～1799m）";
+    if (d < 2400) return "中距離（1800～2399m）";
+    return "長距離（2400m以上）";
+  }, ["短距離（1400m未満）", "マイル前後（1400～1799m）", "中距離（1800～2399m）", "長距離（2400m以上）"]);
+  const venues = summarize(h => h.venue?.trim() || null);
+  const goings = summarize(h => h.going?.trim() || null);
+  function percent(n: number, total: number) {
+    return total ? `${(n / total * 100).toFixed(1)}%` : "－";
+  }
+  function group(title: string, rows: RecordRow[]) {
+    return (
+      <div className={styles.analysisGroup}>
+        <h3>{title}</h3>
+        {rows.map(r => {
+          const winPct = r.starts ? (r.wins / r.starts) * 100 : 0;
+          const top3Pct = r.starts ? (r.top3 / r.starts) * 100 : 0;
+          return (
+            <div className={styles.barRow} key={r.label}>
+              <div className={styles.barHead}>
+                <span className={styles.barLabel}>{r.label}</span>
+                <span className={styles.barMeta}>{r.starts}戦 {r.wins}勝 / 3着以内 {r.top3}回</span>
+              </div>
+              <div className={styles.barLine}>
+                <span className={styles.barName}>勝率</span>
+                <div className={styles.barTrack}><div className={`${styles.barFill} ${styles.barWin}`} style={{ width: `${winPct}%` }} /></div>
+                <span className={styles.barPct}>{percent(r.wins, r.starts)}</span>
+              </div>
+              <div className={styles.barLine}>
+                <span className={styles.barName}>3着内率</span>
+                <div className={styles.barTrack}><div className={`${styles.barFill} ${styles.barTop3}`} style={{ width: `${top3Pct}%` }} /></div>
+                <span className={styles.barPct}>{percent(r.top3, r.starts)}</span>
+              </div>
+            </div>
+          );
+        })}
+        {!rows.length && <p className={styles.barEmpty}>集計できるデータがありません</p>}
+      </div>
+    );
+  }
+  return (
+    <div className={styles.analysisGrid}>
+      {group("芝・ダート別", surfaces)}
+      {group("馬場状態別", goings)}
+      {group("距離帯別", distances)}
+      {group("競馬場別", venues)}
+    </div>
+  );
+}
+
+async function HorseRecord({ id }: { id: string }) {
+  let detail: HistoryHorseDetail | null = null;
+  try {
+    detail = await historyHorseDetail(id);
+  } catch {
+    detail = null;
+  }
+  if (!detail || detail.history.length === 0) return null;
+  const pct = (n: number, d: number) => (d ? `${(n / d * 100).toFixed(1)}%` : "－");
+  const sentences = buildRecordComment(detail.history);
+  return <>
+    <section className={styles.panel}>
+      <h2>個体別成績（過去データ）</h2>
+      <p>通算 {detail.starts.toLocaleString("ja-JP")}戦 {detail.wins}勝・3着以内 {detail.top3}回
+        （勝率 {pct(detail.wins, detail.starts)}・3着内率 {pct(detail.top3, detail.starts)}）</p>
+      <RecordTrendChart history={detail.history}/>
+      <div className={styles.commentBox}>
+        <div className={styles.recordTitle}>
+          <strong>AI COMMENT</strong>
+          <span>AIコメント / 確認済み戦績から自動生成</span>
+        </div>
+        <p className={styles.commentText}>{sentences.join("")}</p>
+      </div>
+    </section>
+    <section className={styles.panel}>
+      <h2>条件別パフォーマンス</h2>
+      <RecordAnalysis history={detail.history}/>
+      <p className={styles.muted}>勝率と3着内率の分母は、各条件で馬IDを確認できた戦績件数です。条件が空欄の戦績は、その条件別集計から除いています。</p>
+    </section>
+  </>;
 }
 
 async function HorseView({ id, offset, filters }: { id: string; offset: number; filters: HistoryFilters }) {
@@ -200,6 +467,7 @@ async function HorseView({ id, offset, filters }: { id: string; offset: number; 
         : <ResultsTable rows={history.items} horseId={id} historyOffset={offset} filters={filters}/>}
       <Pagination params={{...filters,horse:id}} offset={offset} next={history.next_offset}/>
     </section>
+    <HorseRecord id={id}/>
   </>;
 }
 

@@ -182,3 +182,20 @@ export type SireHit = {
 export const sireSearch = (q: string) =>
   query<{ sires: SireHit[] }>("/sire-search", new URLSearchParams({ q }),
     "血統検索に失敗しました。", 45000);
+
+
+export type HistoryRun = {
+  race_id: string; race_date: string; venue: string; race_name: string;
+  horse_number: number; finish_position: number | null;
+  abnormal_code?: string | number | null;
+  win_odds: number | null; surface: string | null; distance_m: number | null;
+  going: string | null; race_time: string | null; last3f_seconds: number | null;
+  corner_positions: (number | null)[];
+};
+export type HistoryHorseDetail = {
+  horse_id: string; horse_name: string; starts: number; wins: number; top3: number;
+  history: HistoryRun[];
+};
+export const historyHorseDetail = (id: string) =>
+  query<HistoryHorseDetail>(`/api/history/horses/${encodeURIComponent(id)}`, undefined,
+    "過去データを取得できませんでした。", 20000);
