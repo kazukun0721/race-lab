@@ -39,6 +39,7 @@ const payoutTypes: { key: string; label: string }[] = [
   { key: "place", label: "複勝" },
   { key: "bracket", label: "枠連" },
   { key: "quinella", label: "馬連" },
+  { key: "wide", label: "ワイド" },
   { key: "exacta", label: "馬単" },
   { key: "trio", label: "3連複" },
   { key: "trifecta", label: "3連単" },
@@ -870,7 +871,12 @@ export default function HistoryPage() {
                           </tbody>
                         </table>
                       </div>
-                      <p className="rh-note">払戻金は100円あたりの金額です。ワイドの配当はデータソースに含まれていないため表示されません。</p>
+                      <p className="rh-note">
+                        払戻金は100円あたりの金額です。
+                        {!payouts.some(p => p.bet_type === "wide") && (
+                          "ワイドの配当はデータソースに含まれていないため表示されません。"
+                        )}
+                      </p>
                     </>
                   ) : (
                     <p className="rh-note">このレースの配当データはありません。</p>
