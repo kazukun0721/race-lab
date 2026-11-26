@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const links = [
-  { href: "/", label: "繝繝・す繝･繝懊・繝・, icon: "竚・ },
-  { href: "/races/auto", label: "繝ｬ繝ｼ繧ｹ荳隕ｧ", icon: "笆､" },
-  { href: "/races/horse", label: "AI莠域ｸｬ", icon: "笳・ },
-  { href: "/review", label: "莠域ｸｬ繝ｬ繝薙Η繝ｼ", icon: "笆･" },
-  { href: "/ranking", label: "繝ｩ繝ｳ繧ｭ繝ｳ繧ｰ", icon: "笆ｦ" },
-  { href: "/mypage", label: "繝槭う繝壹・繧ｸ", icon: "笳・ },
+  { href: "/", label: "ダッシュボード", icon: "⌂" },
+  { href: "/races/auto", label: "レース一覧", icon: "▤" },
+  { href: "/races/horse", label: "AI予測", icon: "◎" },
+  { href: "/review", label: "予測レビュー", icon: "▥" },
+  { href: "/ranking", label: "ランキング", icon: "▦" },
+  { href: "/mypage", label: "マイページ", icon: "◇" },
 ];
 
 export default function MyPage() {
@@ -55,7 +55,7 @@ export default function MyPage() {
           router.replace("/login");
           return;
         }
-        setEmail(data.user.email ?? "譛ｪ逋ｻ骭ｲ");
+        setEmail(data.user.email ?? "未登録");
         setUserId(data.user.id);
         const { data: member } = await supabase.from("group_members").select("display_name").eq("user_id", data.user.id).maybeSingle();
         if (!active) return;
@@ -64,7 +64,7 @@ export default function MyPage() {
           setNameInput(member.display_name);
         }
       } catch {
-        if (active) setError("繝ｭ繧ｰ繧､繝ｳ迥ｶ諷九ｒ遒ｺ隱阪〒縺阪∪縺帙ｓ縺ｧ縺励◆縲・);
+        if (active) setError("ログイン状態を確認できませんでした。");
       } finally {
         if (active) setLoading(false);
       }
@@ -81,13 +81,13 @@ export default function MyPage() {
       const supabase = createClient();
       const { error: signOutError } = await supabase.auth.signOut();
       if (signOutError) {
-        setError("繝ｭ繧ｰ繧｢繧ｦ繝医↓螟ｱ謨励＠縺ｾ縺励◆縲ゅｂ縺・ｸ蠎ｦ縺願ｩｦ縺励￥縺縺輔＞縲・);
+        setError("ログアウトに失敗しました。もう一度お試しください。");
         return;
       }
       router.replace("/login");
       router.refresh();
     } catch {
-      setError("繝ｭ繧ｰ繧｢繧ｦ繝医↓螟ｱ謨励＠縺ｾ縺励◆縲る壻ｿ｡迥ｶ諷九ｒ縺皮｢ｺ隱阪￥縺縺輔＞縲・);
+      setError("ログアウトに失敗しました。通信状態をご確認ください。");
     } finally {
       setLoggingOut(false);
     }
@@ -97,7 +97,7 @@ export default function MyPage() {
     const next = nameInput.trim();
     if (!next || nameSaving) return;
     if (next.length > 30) {
-      setNameMessage("陦ｨ遉ｺ蜷阪・30譁・ｭ嶺ｻ･蜀・↓縺励※縺上□縺輔＞縲・);
+      setNameMessage("表示名は30文字以内にしてください。");
       return;
     }
     setNameSaving(true);
@@ -106,13 +106,13 @@ export default function MyPage() {
       const supabase = createClient();
       const { error: rpcError } = await supabase.rpc("set_my_display_name", { p_display_name: next });
       if (rpcError) {
-        setNameMessage("菫晏ｭ倥↓螟ｱ謨励＠縺ｾ縺励◆縲ゅΓ繝ｳ繝舌・逋ｻ骭ｲ縺梧怏蜉ｹ縺狗｢ｺ隱阪＠縺ｦ縺上□縺輔＞縲・);
+        setNameMessage("保存に失敗しました。メンバー登録が有効か確認してください。");
         return;
       }
       setDisplayName(next);
-      setNameMessage("陦ｨ遉ｺ蜷阪ｒ菫晏ｭ倥＠縺ｾ縺励◆縲ゅΛ繝ｳ繧ｭ繝ｳ繧ｰ縺ｫ繧ょ渚譏縺輔ｌ縺ｾ縺吶・);
+      setNameMessage("表示名を保存しました。ランキングにも反映されます。");
     } catch {
-      setNameMessage("菫晏ｭ倥↓螟ｱ謨励＠縺ｾ縺励◆縲る壻ｿ｡迥ｶ諷九ｒ縺皮｢ｺ隱阪￥縺縺輔＞縲・);
+      setNameMessage("保存に失敗しました。通信状態をご確認ください。");
     } finally {
       setNameSaving(false);
     }
@@ -120,7 +120,7 @@ export default function MyPage() {
 
   return (
     <div className="rl470-shell">
-      <aside className="rl470-sidebar" aria-label="繝｡繧､繝ｳ繝翫ン繧ｲ繝ｼ繧ｷ繝ｧ繝ｳ">
+      <aside className="rl470-sidebar" aria-label="メインナビゲーション">
         <Link href="/" className="rl470-brand">RACE LAB<span>.</span></Link>
         <div className="rl470-sidecaption">WORKSPACE</div>
         <nav className="rl470-nav">
@@ -130,43 +130,43 @@ export default function MyPage() {
             </Link>
           ))}
         </nav>
-        <div className="rl470-sidefooter">笳・PRIVATE WORKSPACE</div>
+        <div className="rl470-sidefooter">● PRIVATE WORKSPACE</div>
       </aside>
 
       <div className="rl470-main">
         <header className="rl470-topbar">
           <span>WORKSPACE&nbsp; / &nbsp;MY ACCOUNT</span>
-          <Link href="/">OVERVIEW 竊・/Link>
+          <Link href="/">OVERVIEW ↗</Link>
         </header>
         <main className="rl470-content">
-          <div className="rl470-eyebrow">笳・RACE INTELLIGENCE / ACCOUNT</div>
-          <h1>繝槭う繝壹・繧ｸ<span>.</span></h1>
-          <p className="rl470-intro">繧｢繧ｫ繧ｦ繝ｳ繝域ュ蝣ｱ縺ｨRACE LAB縺ｮ蛟倶ｺｺ繝ｯ繝ｼ繧ｯ繧ｹ繝壹・繧ｹ縲・/p>
+          <div className="rl470-eyebrow">● RACE INTELLIGENCE / ACCOUNT</div>
+          <h1>マイページ<span>.</span></h1>
+          <p className="rl470-intro">アカウント情報とRACE LABの個人ワークスペース。</p>
 
-          <div className="rl470-sectionhead"><span>01</span> 繧｢繧ｫ繧ｦ繝ｳ繝域ュ蝣ｱ</div>
-          <section className="rl470-panel" aria-label="繧｢繧ｫ繧ｦ繝ｳ繝域ュ蝣ｱ">
+          <div className="rl470-sectionhead"><span>01</span> アカウント情報</div>
+          <section className="rl470-panel" aria-label="アカウント情報">
             {loading ? (
-              <div className="rl470-muted" role="status">繝ｭ繧ｰ繧､繝ｳ迥ｶ諷九ｒ遒ｺ隱堺ｸｭ...</div>
+              <div className="rl470-muted" role="status">ログイン状態を確認中...</div>
             ) : (
               <>
                 <div className="rl470-profile">
                   <div className="rl470-avatar" aria-hidden="true">R.</div>
                   <div>
                     <div className="rl470-small">MEMBER ACCOUNT</div>
-                    <div className="rl470-profiletitle">{displayName || "RACE LAB 繝｡繝ｳ繝舌・"}</div>
-                    <div className="rl470-status"><span aria-hidden="true">笳・/span> 繝ｭ繧ｰ繧､繝ｳ荳ｭ</div>
+                    <div className="rl470-profiletitle">{displayName || "RACE LAB メンバー"}</div>
+                    <div className="rl470-status"><span aria-hidden="true">●</span> ログイン中</div>
                   </div>
                 </div>
                 <div className="rl470-info-grid">
-                  <div className="rl470-info"><div className="rl470-small">繝｡繝ｼ繝ｫ繧｢繝峨Ξ繧ｹ</div><div className="rl470-value">{email}</div></div>
-                  <div className="rl470-info"><div className="rl470-small">陦ｨ遉ｺ蜷搾ｼ医Λ繝ｳ繧ｭ繝ｳ繧ｰ陦ｨ遉ｺ・・/div><div className="rl470-value">{displayName || "譛ｪ險ｭ螳・}</div></div>
-                  <div className="rl470-info"><div className="rl470-small">繝ｦ繝ｼ繧ｶ繝ｼID</div><div className="rl470-value">{userId ? `${userId.slice(0, 8)}窶ｦ` : "譛ｪ蜿門ｾ・}</div></div>
+                  <div className="rl470-info"><div className="rl470-small">メールアドレス</div><div className="rl470-value">{email}</div></div>
+                  <div className="rl470-info"><div className="rl470-small">表示名（ランキング表示）</div><div className="rl470-value">{displayName || "未設定"}</div></div>
+                  <div className="rl470-info"><div className="rl470-small">ユーザーID</div><div className="rl470-value">{userId ? `${userId.slice(0, 8)}…` : "未取得"}</div></div>
                 </div>
                 <div className="rl470-nameedit">
-                  <label className="rl470-small" htmlFor="display-name-input">陦ｨ遉ｺ蜷阪ｒ螟画峩</label>
+                  <label className="rl470-small" htmlFor="display-name-input">表示名を変更</label>
                   <div className="rl470-namerow">
-                    <input id="display-name-input" className="rl470-nameinput" type="text" value={nameInput} maxLength={30} onChange={e => setNameInput(e.target.value)} placeholder="陦ｨ遉ｺ蜷阪ｒ蜈･蜉・ />
-                    <button type="button" className="rl470-namesave" onClick={() => void handleSaveName()} disabled={nameSaving || !nameInput.trim() || nameInput.trim() === displayName}>{nameSaving ? "菫晏ｭ倅ｸｭ..." : "菫晏ｭ倥☆繧・}</button>
+                    <input id="display-name-input" className="rl470-nameinput" type="text" value={nameInput} maxLength={30} onChange={e => setNameInput(e.target.value)} placeholder="表示名を入力" />
+                    <button type="button" className="rl470-namesave" onClick={() => void handleSaveName()} disabled={nameSaving || !nameInput.trim() || nameInput.trim() === displayName}>{nameSaving ? "保存中..." : "保存する"}</button>
                   </div>
                   {nameMessage && <p className="rl470-muted" role="status">{nameMessage}</p>}
                 </div>
@@ -174,32 +174,32 @@ export default function MyPage() {
             )}
           </section>
 
-          <div className="rl470-sectionhead"><span>02</span> 繝槭う繝ｯ繝ｼ繧ｯ繧ｹ繝壹・繧ｹ</div>
+          <div className="rl470-sectionhead"><span>02</span> マイワークスペース</div>
           <div className="rl470-cards">
-            <Link href="/predictions" className="rl470-card"><div className="rl470-cardicon">笳・/div><strong>莠域Φ逋ｻ骭ｲ</strong><p>閾ｪ蛻・・雋ｷ縺・岼繧堤匳骭ｲ縺吶ｋ</p><span className="rl470-arrow">竊・/span></Link>
-            <Link href="/review" className="rl470-card"><div className="rl470-cardicon">笆･</div><strong>莠域Φ繝ｬ繝薙Η繝ｼ</strong><p>雉ｼ蜈･螻･豁ｴ縺ｨ謌千ｸｾ繧堤｢ｺ隱阪☆繧・/p><span className="rl470-arrow">竊・/span></Link>
-            <Link href="/ranking" className="rl470-card"><div className="rl470-cardicon">笆ｦ</div><strong>繝ｩ繝ｳ繧ｭ繝ｳ繧ｰ</strong><p>繝｡繝ｳ繝舌・縺ｨ縺ｮ謌千ｸｾ繧呈ｯ碑ｼ・☆繧・/p><span className="rl470-arrow">竊・/span></Link>
+            <Link href="/predictions" className="rl470-card"><div className="rl470-cardicon">◎</div><strong>予想登録</strong><p>自分の買い目を登録する</p><span className="rl470-arrow">↗</span></Link>
+            <Link href="/review" className="rl470-card"><div className="rl470-cardicon">▥</div><strong>予想レビュー</strong><p>購入履歴と成績を確認する</p><span className="rl470-arrow">↗</span></Link>
+            <Link href="/ranking" className="rl470-card"><div className="rl470-cardicon">▦</div><strong>ランキング</strong><p>メンバーとの成績を比較する</p><span className="rl470-arrow">↗</span></Link>
           </div>
 
-          <div className="rl470-sectionhead"><span>03</span> 陦ｨ遉ｺ繝・・繝・/div>
-          <section className="rl470-panel" aria-label="陦ｨ遉ｺ繝・・繝・>
-            <div className="rl470-theme-options" role="group" aria-label="繝・・繝樣∈謚・>
+          <div className="rl470-sectionhead"><span>03</span> 表示テーマ</div>
+          <section className="rl470-panel" aria-label="表示テーマ">
+            <div className="rl470-theme-options" role="group" aria-label="テーマ選択">
               <button type="button" className={`rl470-theme-option ${theme === "dark" ? "rl470-theme-active" : ""}`} onClick={() => applyTheme("dark")} aria-pressed={theme === "dark"}>
-                <strong>繝繝ｼ繧ｯ</strong>
-                <span>鮟貞渕隱ｿ・井ｻ翫∪縺ｧ縺ｮ陦ｨ遉ｺ・・/span>
+                <strong>ダーク</strong>
+                <span>黒基調（今までの表示）</span>
               </button>
               <button type="button" className={`rl470-theme-option ${theme === "light" ? "rl470-theme-active" : ""}`} onClick={() => applyTheme("light")} aria-pressed={theme === "light"}>
-                <strong>繝帙Ρ繧､繝・/strong>
-                <span>逋ｽ蝓ｺ隱ｿ・域・繧九＞陦ｨ遉ｺ・・/span>
+                <strong>ホワイト</strong>
+                <span>白基調（明るい表示）</span>
               </button>
             </div>
-            <p className="rl470-muted">蜈ｨ繝壹・繧ｸ蜈ｱ騾壹・險ｭ螳壹〒縺吶ゅ％縺ｮ遶ｯ譛ｫ縺ｮ繝悶Λ繧ｦ繧ｶ縺ｫ菫晏ｭ倥＆繧後∪縺吶・/p>
+            <p className="rl470-muted">全ページ共通の設定です。この端末のブラウザに保存されます。</p>
           </section>
 
-          <div className="rl470-sectionhead"><span>04</span> 繧ｻ繝・す繝ｧ繝ｳ邂｡逅・/div>
+          <div className="rl470-sectionhead"><span>04</span> セッション管理</div>
           <section className="rl470-panel rl470-session">
-            <div><strong>繝ｭ繧ｰ繧｢繧ｦ繝・/strong><p className="rl470-muted">迴ｾ蝨ｨ縺ｮ繧｢繧ｫ繧ｦ繝ｳ繝医°繧峨し繧､繝ｳ繧｢繧ｦ繝医＠縺ｾ縺吶・/p></div>
-            <button type="button" onClick={() => void handleLogout()} disabled={loading || loggingOut} className="rl470-logout">{loggingOut ? "蜃ｦ逅・ｸｭ..." : "繝ｭ繧ｰ繧｢繧ｦ繝・竊・}</button>
+            <div><strong>ログアウト</strong><p className="rl470-muted">現在のアカウントからサインアウトします。</p></div>
+            <button type="button" onClick={() => void handleLogout()} disabled={loading || loggingOut} className="rl470-logout">{loggingOut ? "処理中..." : "ログアウト ↗"}</button>
           </section>
           {error && <p className="rl470-error" role="alert">{error}</p>}
           <footer className="rl470-footer">RACE LAB / PRIVATE INTELLIGENCE PLATFORM</footer>
