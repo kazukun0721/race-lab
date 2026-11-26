@@ -297,6 +297,12 @@ export default function HorseRacesPage() {
           .rl-horse select{padding:9px}
           .rl-horse .chip{padding:8px 10px;font-size:11px}
           .rl-horse .toolbar{margin:10px 0}
+          .rl-horse th:nth-child(1),.rl-horse td:nth-child(1){width:22px;min-width:22px;max-width:22px}
+          .rl-horse th:nth-child(2),.rl-horse td:nth-child(2){left:21px;width:26px;min-width:26px;max-width:26px}
+          .rl-horse th:nth-child(3),.rl-horse td:nth-child(3){left:46px;width:34px;min-width:34px;max-width:34px}
+          .rl-horse th:nth-child(4),.rl-horse td:nth-child(4){left:79px;min-width:0}
+          .rl-horse .markbtn2{width:24px;height:24px;border-radius:7px}
+          .rl-horse .horse{font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis}
           .rl-horse select{min-width:0;width:100%}
           .rl-horse .selectors>div{flex:1 1 140px;min-width:0}
           .rl-horse .chip{padding:9px 11px}
