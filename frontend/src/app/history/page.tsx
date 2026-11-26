@@ -28,6 +28,22 @@ type Entry = {
   horse_id: string | null;
 };
 
+type Payout = {
+  bet_type: string;
+  combo: string;
+  payout: number;
+};
+
+const payoutTypes: { key: string; label: string }[] = [
+  { key: "win", label: "単勝" },
+  { key: "place", label: "複勝" },
+  { key: "bracket", label: "枠連" },
+  { key: "quinella", label: "馬連" },
+  { key: "exacta", label: "馬単" },
+  { key: "trio", label: "3連複" },
+  { key: "trifecta", label: "3連単" },
+];
+
 type TargetMetrics = {
   pci: number | null;
   pci3: number | null;
@@ -413,7 +429,7 @@ export default function HistoryPage() {
   const [date, setDate] = useState("");
   const [venue, setVenue] = useState("");
   const [raceId, setRaceId] = useState("");
-  const [raceEntries, setRaceEntries] = useState<{ id: string; items: Entry[] } | null>(null);
+  const [raceEntries, setRaceEntries] = useState<{ id: string; items: Entry[]; payouts: Payout[] } | null>(null);
   const [sortKey, setSortKey] = useState<"finish" | "number" | "odds" | "popularity">("finish");
   const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [horse, setHorse] = useState<HorseDetail | null>(null);
@@ -522,6 +538,7 @@ export default function HistoryPage() {
     || null;
   const selectedRaceId = selectedRace?.race_id;
   const entries = raceEntries?.id === selectedRaceId ? raceEntries?.items ?? [] : [];
+  const payouts = raceEntries?.id === selectedRaceId ? raceEntries?.payouts ?? [] : [];
   const detailLoading = Boolean(selectedRaceId && raceEntries?.id !== selectedRaceId);
 
   const sortedEntries = useMemo(() => {
@@ -567,13 +584,13 @@ export default function HistoryPage() {
     setSortDir(1);
 
     let cancelled = false;
-    void api<{ entries: Entry[] }>(
+    void api<{ entries: Entry[]; payouts?: Payout[] }>(
       `/api/history/races/${selectedRaceId}`
     ).then(data => {
-      if (!cancelled) setRaceEntries({ id: selectedRaceId, items: data.entries });
+      if (!cancelled) setRaceEntries({ id: selectedRaceId, items: data.entries, payouts: data.payouts ?? [] });
     }).catch(e => {
       if (!cancelled) {
-        setRaceEntries({ id: selectedRaceId, items: [] });
+        setRaceEntries({ id: selectedRaceId, items: [], payouts: [] });
         setError(e instanceof Error ? e.message : "出走馬の取得に失敗");
       }
     });
@@ -821,6 +838,44 @@ export default function HistoryPage() {
 
               {detailLoading && !horse && (
                 <p className="rh-loading">詳細データを読み込み中...</p>
+              )}
+
+              {(!detailLoading || payouts.length > 0) && (
+                <div className="rh-payouts">
+                  <h4 className="rh-payouts-title">配当 <span>PAYOUTS</span></h4>
+                  {payouts.length > 0 ? (
+                    <>
+                      <div className="rh-table-wrap">
+                        <table className="rh-table rh-payouts-table">
+                          <thead>
+                            <tr>
+                              <th>券種</th>
+                              <th>組み合わせ</th>
+                              <th>払戻金</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {payoutTypes.flatMap(({ key, label }) => {
+                              const rows = payouts.filter(p => p.bet_type === key);
+                              return rows.map((p, i) => (
+                                <tr key={`${key}-${p.combo}`}>
+                                  {i === 0 && (
+                                    <td className="rh-payouts-type" rowSpan={rows.length}>{label}</td>
+                                  )}
+                                  <td>{p.combo}</td>
+                                  <td className="rh-payouts-amount">{fmt(p.payout)}円</td>
+                                </tr>
+                              ));
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      <p className="rh-note">払戻金は100円あたりの金額です。ワイドの配当はデータソースに含まれていないため表示されません。</p>
+                    </>
+                  ) : (
+                    <p className="rh-note">このレースの配当データはありません。</p>
+                  )}
+                </div>
               )}
             </section>
           </>

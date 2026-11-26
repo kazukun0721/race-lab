@@ -261,6 +261,13 @@
   padding:0;
 }
 .rh-horse-name button:hover,.rh-history-link:hover{text-decoration:underline}
+.rh-payouts{border-top:1px solid var(--rh-row-border);padding:18px 24px 10px}
+.rh-payouts-title{font-size:13px;margin:0 0 10px}
+.rh-payouts-title span{color:var(--rh-small);font-size:10px;margin-left:8px;letter-spacing:.08em}
+.rh-payouts-table th:last-child,.rh-payouts-amount{text-align:right}
+.rh-payouts-type{font-weight:800}
+.rh-payouts-amount{font-weight:700}
+.rh-payouts .rh-note{padding:10px 0 4px}
 .rh-muted,.rh-note,.rh-loading{color:var(--rh-muted);font-size:12px}
 .rh-note,.rh-loading{padding:14px 22px}
 .rh-horse-heading{
