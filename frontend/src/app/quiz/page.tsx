@@ -28,8 +28,22 @@ type MemberStat = {
 
 const SET_SIZE = 8;
 
+const DECADES = [
+  { value: "all", label: "全年代" },
+  { value: "1980", label: "1980年代" },
+  { value: "1990", label: "1990年代" },
+  { value: "2000", label: "2000年代" },
+  { value: "2010", label: "2010年代" },
+  { value: "2020", label: "2020年代" },
+] as const;
+
+type DecadeValue = (typeof DECADES)[number]["value"];
+
 export default function QuizPage() {
   const [phase, setPhase] = useState<Phase>("intro");
+  const [decade, setDecade] = useState<DecadeValue>("all");
+  const [shortNote, setShortNote] = useState("");
+  const [introNote, setIntroNote] = useState("");
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
@@ -41,14 +55,31 @@ export default function QuizPage() {
   const [statsError, setStatsError] = useState("");
   const [statsLoading, setStatsLoading] = useState(false);
 
+  const decadeLabel = DECADES.find(d => d.value === decade)?.label ?? "全年代";
+
   const start = useCallback(async () => {
     setPhase("loading");
     setError("");
+    setShortNote("");
+    setIntroNote("");
     try {
-      const res = await fetch(`/api/quiz?count=${SET_SIZE}`, { cache: "no-store" });
+      const query = decade === "all" ? `count=${SET_SIZE}` : `count=${SET_SIZE}&decade=${decade}`;
+      const res = await fetch(`/api/quiz?${query}`, { cache: "no-store" });
       const body = await res.json();
-      if (!res.ok || !Array.isArray(body.questions) || body.questions.length === 0) {
+      if (!res.ok || !Array.isArray(body.questions)) {
         throw new Error(body.error ?? "クイズを取得できませんでした。");
+      }
+      if (body.questions.length === 0) {
+        setIntroNote(
+          decade === "all"
+            ? "問題を作れませんでした。時間をおいてもう一度試してください。"
+            : `${decadeLabel}では出題できる問題がありませんでした。別の年代を選んでください。`
+        );
+        setPhase("intro");
+        return;
+      }
+      if (body.questions.length < SET_SIZE) {
+        setShortNote(`${decadeLabel}は出題できる問題が${body.questions.length}問だったため、${body.questions.length}問で出題します。`);
       }
       setQuestions(body.questions);
       setIdx(0);
@@ -60,7 +91,7 @@ export default function QuizPage() {
       setError(e instanceof Error ? e.message : "クイズを取得できませんでした。");
       setPhase("error");
     }
-  }, []);
+  }, [decade, decadeLabel]);
 
   const q = questions[idx];
   const score = results.filter(Boolean).length;
@@ -174,6 +205,21 @@ export default function QuizPage() {
       {phase === "intro" && (
         <div className="panel center">
           <p className="lead">出題はすべて本物のデータから。問題は毎回ランダムに変わります。</p>
+          <p className="decadeTitle">出題する年代</p>
+          <div className="decadeRow">
+            {DECADES.map(d => (
+              <button
+                key={d.value}
+                type="button"
+                className={`decadeChip${decade === d.value ? " on" : ""}`}
+                onClick={() => setDecade(d.value)}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+          <p className="note">年代を選ぶと、その年代に生まれた馬と、その年代に開催されたG1だけで出題します。</p>
+          {introNote && <p className="note warn">{introNote}</p>}
           <button type="button" className="primary" onClick={() => void start()}>クイズをはじめる</button>
         </div>
       )}
@@ -191,9 +237,13 @@ export default function QuizPage() {
       {phase === "playing" && q && (
         <div className="panel">
           <div className="meta">
-            <span className="chip">{q.label}</span>
+            <span className="chips">
+              <span className="chip">{q.label}</span>
+              {decade !== "all" && <span className="chip era">{decadeLabel}</span>}
+            </span>
             <span className="progress">{idx + 1} / {questions.length} 問目　・　正解 {score}</span>
           </div>
+          {shortNote && <p className="shortNote">{shortNote}</p>}
           <p className="question">{q.question}</p>
           {q.hints.length > 0 && (
             <ul className="hints">
@@ -236,6 +286,7 @@ export default function QuizPage() {
         <div className="panel">
           <p className="scoreLine">{questions.length}問中 <b>{score}問</b> 正解</p>
           <p className="lead">{scoreComment(score, questions.length)}</p>
+          {shortNote && <p className="note warn">{shortNote}</p>}
           <div className="reviewList">
             {questions.map((item, i) => (
               <div key={i} className="reviewRow">
@@ -248,6 +299,7 @@ export default function QuizPage() {
             ))}
           </div>
           <button type="button" className="primary" onClick={() => void start()}>もう1セットやる</button>
+          <button type="button" className="ghostBtn" onClick={() => setPhase("intro")}>年代を変えてやる</button>
         </div>
       )}
 
@@ -327,6 +379,15 @@ export default function QuizPage() {
         .rl-quiz .statsRow:last-child{border-bottom:0}
         .rl-quiz .statsName{font-size:13px;font-weight:800;min-width:64px}
         .rl-quiz .statsVals{font-size:12px;color:var(--rl-sub);line-height:1.7}
+        .rl-quiz .decadeTitle{font-size:12px;font-weight:800;color:var(--rl-sub);letter-spacing:1px;margin:0 0 10px}
+        .rl-quiz .decadeRow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 12px}
+        .rl-quiz .decadeChip{min-height:44px;padding:10px 14px;border:1px solid var(--rl-border);border-radius:999px;background:var(--rl-bg);color:var(--rl-sub);font-size:13px;font-weight:800;cursor:pointer}
+        .rl-quiz .decadeChip.on{border-color:var(--rl-accent);background:var(--rl-accent-bg);color:var(--rl-accent-bright)}
+        .rl-quiz .note.warn{color:#e5a13d}
+        .rl-quiz .shortNote{font-size:12px;color:#e5a13d;line-height:1.7;margin:0 0 12px}
+        .rl-quiz .chips{display:flex;gap:6px;flex-wrap:wrap}
+        .rl-quiz .chip.era{background:var(--rl-hover);border-color:var(--rl-border);color:var(--rl-sub)}
+        .rl-quiz .ghostBtn{margin-top:10px;background:none;border:1px solid var(--rl-border);color:var(--rl-sub);padding:12px 22px;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;width:100%}
         @media(max-width:760px){.rl-quiz{padding:25px 15px 60px}.rl-quiz h1{font-size:27px}.rl-quiz .panel{padding:16px}.rl-quiz .question{font-size:16px}}
       `}</style>
     </div>
