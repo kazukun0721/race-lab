@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 type QuizQuestion = {
   type: string;
@@ -14,6 +15,17 @@ type QuizQuestion = {
 
 type Phase = "intro" | "loading" | "playing" | "done" | "error";
 
+type MemberStat = {
+  user_id: string;
+  display_name: string;
+  sets: number;
+  totalQuestions: number;
+  totalCorrect: number;
+  rate: number | null;
+  best: { correct: number; total: number } | null;
+  latest: { correct: number; total: number; at: string } | null;
+};
+
 const SET_SIZE = 8;
 
 export default function QuizPage() {
@@ -23,6 +35,11 @@ export default function QuizPage() {
   const [picked, setPicked] = useState<number | null>(null);
   const [results, setResults] = useState<boolean[]>([]);
   const [error, setError] = useState("");
+  const savedRef = useRef(false);
+  const [showStats, setShowStats] = useState(false);
+  const [stats, setStats] = useState<MemberStat[] | null>(null);
+  const [statsError, setStatsError] = useState("");
+  const [statsLoading, setStatsLoading] = useState(false);
 
   const start = useCallback(async () => {
     setPhase("loading");
@@ -37,6 +54,7 @@ export default function QuizPage() {
       setIdx(0);
       setPicked(null);
       setResults([]);
+      savedRef.current = false;
       setPhase("playing");
     } catch (e) {
       setError(e instanceof Error ? e.message : "クイズを取得できませんでした。");
@@ -53,8 +71,26 @@ export default function QuizPage() {
     setResults(prev => [...prev, n === q.answer]);
   };
 
+  const saveResult = useCallback(async (finalResults: boolean[], total: number) => {
+    if (savedRef.current) return;
+    savedRef.current = true;
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from("quiz_results").insert({
+        user_id: user.id,
+        correct_count: finalResults.filter(Boolean).length,
+        total_count: total,
+      });
+    } catch {
+      // 成績の保存に失敗してもクイズの結果表示は妨げない
+    }
+  }, []);
+
   const next = () => {
     if (idx + 1 >= questions.length) {
+      void saveResult(results, questions.length);
       setPhase("done");
     } else {
       setIdx(idx + 1);
@@ -68,6 +104,65 @@ export default function QuizPage() {
     if (s >= total * 0.5) return "いい線いってる。解説で知識を足していこう。";
     if (s >= total * 0.25) return "まずは名馬の名前と代表レースを押さえるところから。";
     return "伸びしろしかない。解説だけでも読んでいって。";
+  };
+
+  const loadStats = useCallback(async () => {
+    setStatsLoading(true);
+    setStatsError("");
+    try {
+      const supabase = createClient();
+      const [resultsRes, membersRes] = await Promise.all([
+        supabase.from("quiz_results").select("user_id, correct_count, total_count, created_at").order("created_at", { ascending: false }),
+        supabase.from("group_members").select("user_id, display_name").eq("status", "active"),
+      ]);
+      if (resultsRes.error) throw new Error(resultsRes.error.message);
+      if (membersRes.error) throw new Error(membersRes.error.message);
+      const rows = (resultsRes.data ?? []) as { user_id: string; correct_count: number; total_count: number; created_at: string }[];
+      const members = (membersRes.data ?? []) as { user_id: string; display_name: string }[];
+      const byUser = new Map<string, typeof rows>();
+      for (const r of rows) {
+        const arr = byUser.get(r.user_id) ?? [];
+        arr.push(r);
+        byUser.set(r.user_id, arr);
+      }
+      const merged: MemberStat[] = members.map(m => {
+        const mine = byUser.get(m.user_id) ?? [];
+        const totalQuestions = mine.reduce((a, r) => a + r.total_count, 0);
+        const totalCorrect = mine.reduce((a, r) => a + r.correct_count, 0);
+        const bestRow = mine.length
+          ? [...mine].sort((a, b) => (b.correct_count / b.total_count) - (a.correct_count / a.total_count) || b.correct_count - a.correct_count)[0]
+          : null;
+        const latestRow = mine[0] ?? null;
+        return {
+          user_id: m.user_id,
+          display_name: m.display_name,
+          sets: mine.length,
+          totalQuestions,
+          totalCorrect,
+          rate: totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : null,
+          best: bestRow ? { correct: bestRow.correct_count, total: bestRow.total_count } : null,
+          latest: latestRow ? { correct: latestRow.correct_count, total: latestRow.total_count, at: latestRow.created_at } : null,
+        };
+      });
+      merged.sort((a, b) => b.sets - a.sets || (b.rate ?? -1) - (a.rate ?? -1));
+      setStats(merged);
+    } catch {
+      setStatsError("成績を取得できませんでした。");
+      setStats(null);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
+  const toggleStats = () => {
+    const nextShow = !showStats;
+    setShowStats(nextShow);
+    if (nextShow) void loadStats();
+  };
+
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getMonth() + 1}/${d.getDate()}`;
   };
 
   return (
@@ -156,6 +251,39 @@ export default function QuizPage() {
         </div>
       )}
 
+      <div className="statsEntry">
+        <button type="button" className="statsLink" onClick={toggleStats}>成績</button>
+      </div>
+
+      {showStats && (
+        <div className="statsPanel">
+          <p className="statsTitle">クイズ成績（メンバー別）</p>
+          {statsLoading && <p className="statsNote">読み込み中…</p>}
+          {!statsLoading && statsError && <p className="statsNote">{statsError}</p>}
+          {!statsLoading && !statsError && stats && stats.every(s => s.sets === 0) && (
+            <p className="statsNote">まだ記録がありません。クイズを1セット終えると、ここに成績が残ります。</p>
+          )}
+          {!statsLoading && !statsError && stats && stats.some(s => s.sets > 0) && (
+            <div>
+              {stats.map(s => (
+                <div key={s.user_id} className="statsRow">
+                  <span className="statsName">{s.display_name}</span>
+                  {s.sets === 0 ? (
+                    <span className="statsVals">まだプレイなし</span>
+                  ) : (
+                    <span className="statsVals">
+                      {s.sets}セット ・ {s.totalQuestions}問中{s.totalCorrect}問正解 ・ 正答率{s.rate?.toFixed(1)}%
+                      {s.best && <> ・ ベスト {s.best.total}問中{s.best.correct}問</>}
+                      {s.latest && <> ・ 直近 {fmtDate(s.latest.at)} {s.latest.total}問中{s.latest.correct}問</>}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <style>{`
         .rl-quiz{max-width:760px;margin:0 auto;padding:36px 20px 80px;color:var(--rl-text);font-family:Arial,'Noto Sans JP',sans-serif}
         .rl-quiz .eyebrow{color:var(--rl-accent-bright);font-size:10px;font-weight:900;letter-spacing:2px;margin:0 0 10px}
@@ -190,6 +318,15 @@ export default function QuizPage() {
         .rl-quiz .reviewRow .verdict{font-size:16px;margin:0}
         .rl-quiz .reviewQ{font-size:13px;font-weight:700;margin:0 0 3px;line-height:1.6}
         .rl-quiz .reviewA{font-size:12px;color:var(--rl-muted);margin:0}
+        .rl-quiz .statsEntry{text-align:right;margin-top:26px}
+        .rl-quiz .statsLink{background:none;border:0;padding:4px 2px;font-size:11px;letter-spacing:1px;color:var(--rl-muted);opacity:.55;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+        .rl-quiz .statsPanel{margin-top:10px;border:1px solid var(--rl-border);border-radius:10px;padding:14px 16px;background:var(--rl-panel)}
+        .rl-quiz .statsTitle{font-size:12px;font-weight:800;color:var(--rl-sub);margin:0 0 8px}
+        .rl-quiz .statsNote{font-size:12px;color:var(--rl-muted);line-height:1.7;margin:0}
+        .rl-quiz .statsRow{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--rl-border)}
+        .rl-quiz .statsRow:last-child{border-bottom:0}
+        .rl-quiz .statsName{font-size:13px;font-weight:800;min-width:64px}
+        .rl-quiz .statsVals{font-size:12px;color:var(--rl-sub);line-height:1.7}
         @media(max-width:760px){.rl-quiz{padding:25px 15px 60px}.rl-quiz h1{font-size:27px}.rl-quiz .panel{padding:16px}.rl-quiz .question{font-size:16px}}
       `}</style>
     </div>
