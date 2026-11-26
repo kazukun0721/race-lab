@@ -623,9 +623,40 @@ async function HomeView({ tab }: { tab: string }) {
     }
     return copy.slice(0, n);
   };
-  const spot = data && data.spotlight_pool.length
-    ? data.spotlight_pool[Math.floor(Math.random() * data.spotlight_pool.length)]
-    : null;
+  // 今日のピックアップ: JSTの日付をシードにした日替わり抽選（同じ日は
+  // 何度開いても同じ馬）。最終出走年が新しい馬ほど重みを大きくし、
+  // 往年の名馬にも下限分のチャンスを残す。
+  const seededRandom = (seedText: string) => {
+    let seed = 2166136261;
+    for (let i = 0; i < seedText.length; i++) {
+      seed ^= seedText.charCodeAt(i);
+      seed = Math.imul(seed, 16777619);
+    }
+    return () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+  };
+  const pickSpotlight = (pool: PickupHorse[], asOf: string) => {
+    if (!pool.length) return null;
+    const todayJst = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(new Date());
+    const rand = seededRandom(`spotlight-${todayJst}`);
+    const asOfYear = Number(asOf.slice(0, 4)) || new Date().getFullYear();
+    const weight = (h: PickupHorse) => {
+      const last = Number(h.last_year);
+      if (!last) return 0.15;
+      const age = Math.max(0, asOfYear - last);
+      return 0.15 + 0.85 * Math.pow(0.5, age / 3);
+    };
+    const total = pool.reduce((sum, h) => sum + weight(h), 0);
+    let r = rand() * total;
+    for (const h of pool) {
+      r -= weight(h);
+      if (r <= 0) return h;
+    }
+    return pool[pool.length - 1];
+  };
+  const spot = data ? pickSpotlight(data.spotlight_pool, data.as_of) : null;
   const allList = data ? pickRandom(data.all_time_pool, 10) : [];
   return <>
     {spot && data && <section className={styles.panel}>
@@ -634,7 +665,7 @@ async function HomeView({ tab }: { tab: string }) {
         <span className={styles.muted}> {spot.birth_year}年生まれ</span></p>
       <p>{pickupLine(spot)}</p>
       {spot.comment && <p className={styles.spotComment}>{spot.comment}</p>}
-      <p className={styles.muted}>歴代勝利数ベスト50からランダム表示（{data.as_of}時点の集計）</p>
+      <p className={styles.muted}>最近活躍した馬を中心に、歴代の名馬も含めて日替わりで表示（{data.as_of}時点の集計）</p>
     </section>}
     <section className={styles.panel}>
       <h2>血統検索</h2>
