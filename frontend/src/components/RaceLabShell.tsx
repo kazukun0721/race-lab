@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import ViewToggle from "./ViewToggle";
 import "./race-lab-shell.css";
 
 const items = [
@@ -34,6 +35,7 @@ export default function RaceLabShell({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
+        <div className="rl-shared-viewtoggle"><ViewToggle /></div>
         <div className="rl-shared-footer">● PRIVATE WORKSPACE</div>
       </aside>
       <div className="rl-shared-body">{children}</div>

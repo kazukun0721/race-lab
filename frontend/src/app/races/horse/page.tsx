@@ -274,6 +274,15 @@ export default function HorseRacesPage() {
         .rl-horse td.br6{background:#2f9e63;color:#fff}
         .rl-horse td.br7{background:#ef8f3c;color:#1c2733}
         .rl-horse td.br8{background:#f2a0c0;color:#1c2733}
+        .rl-horse .raceinfo{padding:13px 15px}
+        .rl-horse .raceinfo h2{font-size:17px;margin:0 0 3px}
+        .rl-horse .raceinfo .primary{padding:8px 12px;font-size:12px}
+        .rl-horse .infostats{display:flex;flex-wrap:wrap;margin-top:10px;border-top:1px solid var(--rl-border);padding-top:9px}
+        .rl-horse .infostat{padding:0 14px;border-left:1px solid var(--rl-border)}
+        .rl-horse .infostat:first-child{padding-left:0;border-left:none}
+        .rl-horse .infostat .k{font-size:9px;letter-spacing:.08em;color:var(--rl-faint);font-weight:700}
+        .rl-horse .infostat .v{font-size:14px;font-weight:800;margin-top:1px}
+        .rl-horse .infostat .v small{font-size:10px;color:var(--rl-muted);font-weight:600}
         @media(max-width:720px){.rl-horse .side{display:none;width:230px}.rl-horse .side.open{display:block}.rl-horse .workspace{margin-left:0}.rl-horse .topbar{padding:0 18px}.rl-horse .mobilemenu{display:inline-flex;border:1px solid var(--rl-border);background:var(--rl-hover);color:var(--rl-accent-bright);border-radius:7px;padding:8px 12px}.rl-horse .content{padding:25px 15px 50px}.rl-horse h1{font-size:27px}.rl-horse .panel{padding:15px}.rl-horse .selectors{gap:16px}.rl-horse .metrics{gap:8px}.rl-horse .metric{padding:13px}.rl-horse .metric .v{font-size:19px}}
         @media(max-width:820px){
           .rl-horse th{padding:9px 7px;font-size:10px}
@@ -324,6 +333,9 @@ export default function HorseRacesPage() {
           .rl-horse th:nth-child(4),.rl-horse td:nth-child(4){position:static;left:auto;min-width:0;box-shadow:none}
           .rl-horse .horse{font-size:10px;max-width:none;overflow:visible}
           .rl-horse .horsesub{font-size:9px}
+          .rl-horse .raceinfo{padding:10px 12px}
+          .rl-horse .infostat{padding:0 10px}
+          .rl-horse .infostat .v{font-size:13px}
           .rl-horse select{min-width:0;width:100%}
           .rl-horse .selectors>div{flex:1 1 140px;min-width:0}
           .rl-horse .chip{padding:9px 11px}
@@ -361,16 +373,16 @@ export default function HorseRacesPage() {
           {loadingDetail && <div className="notice">選択レースの詳細を取得しています...</div>}
           {detail && !loadingDetail && <>
             <div className="sectionhead"><b>03</b> レース情報 / {detail.venue} {detail.race_number}R</div>
-            <section className="panel">
+            <section className="panel raceinfo">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-                <div><h2 style={{ fontSize: 20, margin: "0 0 7px" }}>{detail.venue} {detail.race_number}R {detail.race_name ? ` / ${detail.race_name}` : ""}</h2><p className="sub">{detail.race_date}　/　{detail.surface ?? "種別未登録"}{detail.distance ? ` ${detail.distance}m` : ""}　/　馬場：{detail.track_condition ?? "未登録"}　/　天候：{detail.weather ?? "未登録"}</p></div>
+                <div><h2>{detail.venue} {detail.race_number}R {detail.race_name ? ` / ${detail.race_name}` : ""}</h2><p className="sub">{detail.race_date}　/　{detail.surface ?? "種別未登録"}{detail.distance ? ` ${detail.distance}m` : ""}　/　馬場：{detail.track_condition ?? "未登録"}　/　天候：{detail.weather ?? "未登録"}</p></div>
                 <a className="primary" href={`/predictions?sport=horse&date=${detail.race_date}&venue=${encodeURIComponent(detail.venue)}&race=${detail.race_number}`}>このレースを予想する ↗</a>
               </div>
-              <div className="metrics">
-                <div className="metric"><div className="k">出走登録馬</div><div className="v">{entryCount}<span style={{ fontSize: 12 }}> 頭</span></div></div>
-                <div className="metric"><div className="k">発走予定</div><div className="v small">{detail.starts_at ? new Date(detail.starts_at).toLocaleTimeString("ja-JP", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" }) : "未登録"}</div></div>
-                <div className="metric"><div className="k">AI予測登録</div><div className="v">{predictionCount}<span style={{ fontSize: 12 }}> 頭</span></div></div>
-                <div className="metric"><div className="k">オッズ最終取得</div><div className="v small">{latestOddsTime ? new Date(latestOddsTime).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "未取得"}</div></div>
+              <div className="infostats">
+                <div className="infostat"><div className="k">出走登録馬</div><div className="v">{entryCount}<small> 頭</small></div></div>
+                <div className="infostat"><div className="k">発走予定</div><div className="v">{detail.starts_at ? new Date(detail.starts_at).toLocaleTimeString("ja-JP", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" }) : "未登録"}</div></div>
+                <div className="infostat"><div className="k">AI予測登録</div><div className="v">{predictionCount}<small> 頭</small></div></div>
+                <div className="infostat"><div className="k">オッズ最終取得</div><div className="v">{latestOddsTime ? new Date(latestOddsTime).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "未取得"}</div></div>
               </div>
             </section>
             <div className="sectionhead"><b>04</b> 出馬表・AI分析</div>

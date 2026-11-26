@@ -105,3 +105,7 @@
   .rl-shared-link{padding:12px}
   .rl-shared-body :is(.rl-content,.rl466-main,.rl-review-content,.rank-content,.rl470-content){padding-bottom:56px!important}
 }
+.rl-shared-viewtoggle{margin-top:14px;padding:0 2px}
+.rl-view-toggle{width:100%;padding:9px 10px;border:1px solid var(--rl-border);border-radius:7px;background:var(--rl-panel);color:var(--rl-sub);font:700 11px/1.4 Arial,'Noto Sans JP',sans-serif;cursor:pointer}
+.rl-view-toggle:hover{color:var(--rl-accent-bright);border-color:var(--rl-accent)}
+@media(max-width:760px){.rl-shared-viewtoggle{margin-top:8px}}
