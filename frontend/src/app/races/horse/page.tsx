@@ -276,6 +276,9 @@ export default function HorseRacesPage() {
           .rl-horse .formcell .muted{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:126px}
           .rl-horse .formname{max-width:126px}
           .rl-horse td:nth-child(5),.rl-horse td:nth-child(6),.rl-horse td:nth-child(7){white-space:nowrap}
+          .rl-horse .celllinks{flex-direction:column;align-items:flex-start;gap:4px;margin-top:4px}
+          .rl-horse .celllinks a{white-space:nowrap;font-size:11px}
+          .rl-horse .detailbtn{margin-top:0;white-space:nowrap}
           .rl-horse select{min-width:0;width:100%}
           .rl-horse .selectors>div{flex:1 1 140px;min-width:0}
           .rl-horse .chip{padding:9px 11px}
