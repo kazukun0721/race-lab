@@ -8,6 +8,7 @@ type QuizQuestion = {
   label: string;
   question: string;
   hints: string[];
+  hint: string | null;
   choices: string[];
   answer: number;
   explain: string;
@@ -24,6 +25,9 @@ type MemberStat = {
   rate: number | null;
   best: { correct: number; total: number } | null;
   latest: { correct: number; total: number; at: string } | null;
+  totalHints: number | null;
+  avgHints: number | null;
+  latestHints: number | null;
 };
 
 const SET_SIZE = 8;
@@ -48,6 +52,7 @@ export default function QuizPage() {
   const [idx, setIdx] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [results, setResults] = useState<boolean[]>([]);
+  const [hintsUsed, setHintsUsed] = useState<boolean[]>([]);
   const [error, setError] = useState("");
   const savedRef = useRef(false);
   const [showStats, setShowStats] = useState(false);
@@ -85,6 +90,7 @@ export default function QuizPage() {
       setIdx(0);
       setPicked(null);
       setResults([]);
+      setHintsUsed([]);
       savedRef.current = false;
       setPhase("playing");
     } catch (e) {
@@ -95,6 +101,7 @@ export default function QuizPage() {
 
   const q = questions[idx];
   const score = results.filter(Boolean).length;
+  const hintCount = hintsUsed.filter(Boolean).length;
 
   const pick = (n: number) => {
     if (picked !== null || !q) return;
@@ -102,18 +109,32 @@ export default function QuizPage() {
     setResults(prev => [...prev, n === q.answer]);
   };
 
-  const saveResult = useCallback(async (finalResults: boolean[], total: number) => {
+  const openHint = () => {
+    if (!q?.hint || picked !== null || hintsUsed[idx]) return;
+    setHintsUsed(prev => {
+      const nextUsed = [...prev];
+      nextUsed[idx] = true;
+      return nextUsed;
+    });
+  };
+
+  const saveResult = useCallback(async (finalResults: boolean[], total: number, usedHints: number) => {
     if (savedRef.current) return;
     savedRef.current = true;
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      await supabase.from("quiz_results").insert({
+      const base = {
         user_id: user.id,
         correct_count: finalResults.filter(Boolean).length,
         total_count: total,
-      });
+      };
+      const withHint = await supabase.from("quiz_results").insert({ ...base, hint_count: usedHints });
+      if (withHint.error) {
+        // hint_count 列がまだ無いDBでは、ヒントなしの形で保存し直す
+        await supabase.from("quiz_results").insert(base);
+      }
     } catch {
       // 成績の保存に失敗してもクイズの結果表示は妨げない
     }
@@ -121,7 +142,7 @@ export default function QuizPage() {
 
   const next = () => {
     if (idx + 1 >= questions.length) {
-      void saveResult(results, questions.length);
+      void saveResult(results, questions.length, hintCount);
       setPhase("done");
     } else {
       setIdx(idx + 1);
@@ -142,13 +163,21 @@ export default function QuizPage() {
     setStatsError("");
     try {
       const supabase = createClient();
-      const [resultsRes, membersRes] = await Promise.all([
-        supabase.from("quiz_results").select("user_id, correct_count, total_count, created_at").order("created_at", { ascending: false }),
-        supabase.from("group_members").select("user_id, display_name").eq("status", "active"),
-      ]);
-      if (resultsRes.error) throw new Error(resultsRes.error.message);
+      const membersPromise = supabase.from("group_members").select("user_id, display_name").eq("status", "active");
+      type QuizRow = { user_id: string; correct_count: number; total_count: number; created_at: string; hint_count?: number | null };
+      const firstRes = await supabase.from("quiz_results").select("user_id, correct_count, total_count, created_at, hint_count").order("created_at", { ascending: false });
+      let hintsKnown = true;
+      let rawRows: unknown = firstRes.data ?? [];
+      if (firstRes.error) {
+        // hint_count 列がまだ無いDBではヒント集計なしで読み直す
+        hintsKnown = false;
+        const secondRes = await supabase.from("quiz_results").select("user_id, correct_count, total_count, created_at").order("created_at", { ascending: false });
+        if (secondRes.error) throw new Error(secondRes.error.message);
+        rawRows = secondRes.data ?? [];
+      }
+      const membersRes = await membersPromise;
       if (membersRes.error) throw new Error(membersRes.error.message);
-      const rows = (resultsRes.data ?? []) as { user_id: string; correct_count: number; total_count: number; created_at: string }[];
+      const rows = rawRows as QuizRow[];
       const members = (membersRes.data ?? []) as { user_id: string; display_name: string }[];
       const byUser = new Map<string, typeof rows>();
       for (const r of rows) {
@@ -164,6 +193,7 @@ export default function QuizPage() {
           ? [...mine].sort((a, b) => (b.correct_count / b.total_count) - (a.correct_count / a.total_count) || b.correct_count - a.correct_count)[0]
           : null;
         const latestRow = mine[0] ?? null;
+        const totalHints = hintsKnown ? mine.reduce((a, r) => a + (r.hint_count ?? 0), 0) : null;
         return {
           user_id: m.user_id,
           display_name: m.display_name,
@@ -173,6 +203,9 @@ export default function QuizPage() {
           rate: totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : null,
           best: bestRow ? { correct: bestRow.correct_count, total: bestRow.total_count } : null,
           latest: latestRow ? { correct: latestRow.correct_count, total: latestRow.total_count, at: latestRow.created_at } : null,
+          totalHints,
+          avgHints: totalHints !== null && mine.length > 0 ? totalHints / mine.length : null,
+          latestHints: hintsKnown && latestRow ? (latestRow.hint_count ?? 0) : null,
         };
       });
       merged.sort((a, b) => b.sets - a.sets || (b.rate ?? -1) - (a.rate ?? -1));
@@ -219,6 +252,7 @@ export default function QuizPage() {
             ))}
           </div>
           <p className="note">年代を選ぶと、その年代に生まれた馬と、その年代に開催されたG1だけで出題します。</p>
+          <p className="note">分からない問題は、回答前に「ヒントを見る」を1問につき1回だけ押せます。使った回数は成績に記録されます。</p>
           {introNote && <p className="note warn">{introNote}</p>}
           <button type="button" className="primary" onClick={() => void start()}>クイズをはじめる</button>
         </div>
@@ -241,7 +275,7 @@ export default function QuizPage() {
               <span className="chip">{q.label}</span>
               {decade !== "all" && <span className="chip era">{decadeLabel}</span>}
             </span>
-            <span className="progress">{idx + 1} / {questions.length} 問目　・　正解 {score}</span>
+            <span className="progress">{idx + 1} / {questions.length} 問目　・　正解 {score}　・　ヒント {hintCount}回</span>
           </div>
           {shortNote && <p className="shortNote">{shortNote}</p>}
           <p className="question">{q.question}</p>
@@ -249,6 +283,12 @@ export default function QuizPage() {
             <ul className="hints">
               {q.hints.map((h, i) => <li key={i}>ヒント：{h}</li>)}
             </ul>
+          )}
+          {q.hint && picked === null && !hintsUsed[idx] && (
+            <button type="button" className="hintBtn" onClick={openHint}>ヒントを見る（1問に1回だけ）</button>
+          )}
+          {q.hint && hintsUsed[idx] && (
+            <p className="tapHint">追加ヒント：{q.hint}</p>
           )}
           <div className="choices">
             {q.choices.map((c, i) => {
@@ -286,6 +326,7 @@ export default function QuizPage() {
         <div className="panel">
           <p className="scoreLine">{questions.length}問中 <b>{score}問</b> 正解</p>
           <p className="lead">{scoreComment(score, questions.length)}</p>
+          <p className="note">ヒントは{hintCount}回使いました。</p>
           {shortNote && <p className="note warn">{shortNote}</p>}
           <div className="reviewList">
             {questions.map((item, i) => (
@@ -294,6 +335,7 @@ export default function QuizPage() {
                 <div>
                   <p className="reviewQ">{item.question}</p>
                   <p className="reviewA">正解：{item.choices[item.answer]}</p>
+                  {hintsUsed[i] && <p className="reviewHint">ヒント使用</p>}
                 </div>
               </div>
             ))}
@@ -327,6 +369,8 @@ export default function QuizPage() {
                       {s.sets}セット ・ {s.totalQuestions}問中{s.totalCorrect}問正解 ・ 正答率{s.rate?.toFixed(1)}%
                       {s.best && <> ・ ベスト {s.best.total}問中{s.best.correct}問</>}
                       {s.latest && <> ・ 直近 {fmtDate(s.latest.at)} {s.latest.total}問中{s.latest.correct}問</>}
+                      {s.totalHints !== null && <> ・ ヒント累計{s.totalHints}回（平均{(s.avgHints ?? 0).toFixed(1)}回/セット）</>}
+                      {s.latestHints !== null && <> ・ 直近ヒント{s.latestHints}回</>}
                     </span>
                   )}
                 </div>
@@ -352,6 +396,9 @@ export default function QuizPage() {
         .rl-quiz .question{font-size:17px;font-weight:800;line-height:1.6;margin:0 0 12px}
         .rl-quiz .hints{list-style:none;margin:0 0 16px;padding:10px 14px;background:var(--rl-hover);border-radius:8px}
         .rl-quiz .hints li{font-size:12.5px;line-height:1.8;color:var(--rl-sub)}
+        .rl-quiz .hintBtn{width:100%;min-height:48px;margin:0 0 16px;padding:12px 16px;border:1px dashed var(--rl-accent);border-radius:10px;background:var(--rl-accent-bg);color:var(--rl-accent-bright);font-size:13.5px;font-weight:800;cursor:pointer}
+        .rl-quiz .tapHint{margin:0 0 16px;padding:10px 14px;border:1px dashed var(--rl-accent);border-radius:8px;background:var(--rl-accent-bg);color:var(--rl-accent-bright);font-size:13px;font-weight:700;line-height:1.7}
+        .rl-quiz .reviewHint{font-size:11px;color:var(--rl-accent-bright);margin:3px 0 0}
         .rl-quiz .choices{display:grid;gap:10px}
         .rl-quiz .choice{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:56px;padding:13px 16px;border:1px solid var(--rl-border);border-radius:10px;background:var(--rl-bg);color:var(--rl-text);font-size:15px;font-weight:700;text-align:left;cursor:pointer}
         .rl-quiz .choice:disabled{cursor:default}

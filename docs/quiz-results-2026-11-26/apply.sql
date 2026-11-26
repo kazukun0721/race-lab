@@ -2,6 +2,8 @@
 -- 既存テーブル・既存データには一切触れない（追加のみ）。
 -- 実行方法：Supabase の SQL Editor に全文を貼って実行（単一トランザクション想定）。
 -- ロールバックは rollback.sql（同フォルダ）。確認用クエリは verify.sql。
+-- 注意：旧版の apply.sql を既に実行済みの場合は、このファイルではなく
+-- add-hint-count.sql（hint_count 列の追加マイグレーション）を実行すること。
 
 begin;
 
@@ -11,8 +13,10 @@ create table if not exists public.quiz_results (
   user_id uuid not null references auth.users,
   correct_count integer not null check (correct_count >= 0),
   total_count integer not null check (total_count > 0),
+  hint_count integer not null default 0 check (hint_count >= 0),
   created_at timestamptz not null default now(),
-  check (correct_count <= total_count)
+  check (correct_count <= total_count),
+  check (hint_count <= total_count)
 );
 
 create index if not exists quiz_results_user_created_idx
