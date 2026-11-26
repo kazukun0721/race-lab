@@ -62,6 +62,34 @@ type FormItem = {
   last3f: string | null; margin: string | null; passing: string | null;
 };
 
+type EvidenceStat = {
+  starts: number; wins: number; seconds: number; thirds: number;
+  win_rate: number | null; top3_rate: number | null;
+};
+type ConditionStat = EvidenceStat & { key: string; label: string };
+type HorseEvidence = {
+  conditions: ConditionStat[];
+  jockey: { entered: string | null; combo: EvidenceStat | null; last_jockey: string | null; changed: boolean | null } | null;
+  recent: {
+    date: string; venue: string; race_number: number; class_label: string | null;
+    surface: string | null; distance: number | null; going: string | null;
+    finish: number | null; starters: number | null; jockey: string | null;
+    last3f: string | null; margin: string | null; passing: string | null;
+    interval_days: number | null; last3f_rank?: number; last3f_field?: number;
+  } | null;
+  pedigree: {
+    sire: string | null; damsire: string | null;
+    sire_surface: (EvidenceStat & { surface: string; horses: number }) | null;
+    sire_distance: (EvidenceStat & { band: string; horses: number }) | null;
+  } | null;
+};
+
+function fmtStat(s: EvidenceStat): string {
+  const wr = s.win_rate != null ? `${(s.win_rate * 100).toFixed(1)}%` : "-";
+  const tr = s.top3_rate != null ? `${(s.top3_rate * 100).toFixed(1)}%` : "-";
+  return `${s.starts}戦${s.wins}勝（2着${s.seconds}・3着${s.thirds}） 勝率${wr}／3着内率${tr}`;
+}
+
 const venueOrder = ["東京", "中山", "京都", "阪神", "中京", "新潟", "福島", "小倉", "札幌", "函館"];
 
 
@@ -80,6 +108,8 @@ export default function HorseRacesPage() {
   const [expandedHorse, setExpandedHorse] = useState<number | null>(null);
   const [formByHorse, setFormByHorse] = useState<Record<string, FormItem[]>>({});
   const [formState, setFormState] = useState<"idle" | "loading" | "ok" | "error">("idle");
+  const [evidenceByHorse, setEvidenceByHorse] = useState<Record<string, HorseEvidence | null>>({});
+  const [evidenceState, setEvidenceState] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [loadingList, setLoadingList] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState("");
@@ -186,6 +216,29 @@ export default function HorseRacesPage() {
     return () => { active = false; };
   }, [detail?.id]);
 
+  useEffect(() => {
+    if (!detail) { setEvidenceByHorse({}); setEvidenceState("idle"); return; }
+    const entered = detail.horse_entries
+      .filter(h => h.entry_status === "entered" && h.horse_id && /^\d{10}$/.test(h.horse_id));
+    if (entered.length === 0) { setEvidenceByHorse({}); setEvidenceState("idle"); return; }
+    const ids = [...new Set(entered.map(h => h.horse_id as string))];
+    const jockeys: Record<string, string> = {};
+    for (const h of entered) if (h.jockey_name) jockeys[h.horse_id as string] = h.jockey_name;
+    const params = new URLSearchParams({
+      ids: ids.join(","), jockeys: JSON.stringify(jockeys), before: detail.race_date,
+      venue: detail.venue, surface: detail.surface ?? "",
+      distance: detail.distance != null ? String(detail.distance) : "",
+      going: detail.track_condition ?? "",
+    });
+    let active = true;
+    setEvidenceState("loading");
+    fetch(`/api/horse-evidence?${params.toString()}`, { cache: "no-store" })
+      .then(async res => { if (!res.ok) throw new Error("evidence fetch failed"); return res.json(); })
+      .then(body => { if (active) { setEvidenceByHorse(body as Record<string, HorseEvidence | null>); setEvidenceState("ok"); } })
+      .catch(() => { if (active) { setEvidenceByHorse({}); setEvidenceState("error"); } });
+    return () => { active = false; };
+  }, [detail?.id]);
+
   const [mobileNav, setMobileNav] = useState(false);
   const { marks, cycleMark, marksStatus, marksNote } = usePredictionMarks(detail?.id ?? null);
   const latestOddsTime = detail?.horse_odds.filter(o => o.bet_type === oddsType)
@@ -257,7 +310,7 @@ export default function HorseRacesPage() {
         .rl-horse .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}.rl-horse .metric{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}.rl-horse .metric .k{color:var(--rl-sub);font-size:10px;letter-spacing:1px;font-weight:800}.rl-horse .metric .v{font-size:23px;font-weight:900;margin-top:12px}.rl-horse .metric .v.small{font-size:14px}
         .rl-horse .toolbar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin:15px 0}.rl-horse .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.rl-horse table{border-collapse:collapse;width:100%;min-width:1050px}.rl-horse th,.rl-horse td{border-right:1px solid var(--rl-border)}.rl-horse th:last-child,.rl-horse td:last-child{border-right:0}.rl-horse th{text-align:left;color:var(--rl-muted);background:var(--rl-panel);font-size:11px;padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap}.rl-horse td{padding:11px 10px;border-bottom:1px solid var(--rl-border);font-size:12px;vertical-align:middle}.rl-horse tr:last-child td{border-bottom:0}.rl-horse tbody tr:hover{background:var(--rl-hover)}.rl-horse .horse{font-weight:800;color:var(--rl-text);white-space:nowrap}.rl-horse .number{font-weight:900;color:var(--green)}.rl-horse .muted{color:var(--rl-muted)}.rl-horse .detailbtn{border:1px solid var(--rl-border);background:var(--rl-hover);color:var(--rl-accent-bright);border-radius:6px;padding:7px 9px;margin-top:5px;font-size:11px}.rl-horse .detailtext{white-space:pre-wrap;max-width:230px;line-height:1.6;margin-top:8px;color:var(--rl-sub)}
         .rl-horse .markbtn2{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;border:2px solid var(--rl-border);background:transparent;color:var(--rl-muted);font-size:17px;font-weight:900;line-height:1;padding:0}.rl-horse .markbtn2:disabled{opacity:.45}.rl-horse .markbtn2.m-primary{border-color:#e5484d;color:#e5484d;background:rgba(229,72,77,.13)}.rl-horse .markbtn2.m-secondary{border-color:#4c9aff;color:#4c9aff;background:rgba(76,154,255,.13)}.rl-horse .markbtn2.m-third{border-color:#30a46c;color:#30a46c;background:rgba(48,164,108,.13)}.rl-horse .markbtn2.m-attention{border-color:#f5a524;color:#f5a524;background:rgba(245,165,36,.13)}.rl-horse .formcell{min-width:118px;vertical-align:top}.rl-horse .formdate{font-weight:800;font-size:11px;white-space:nowrap}.rl-horse .formname{font-size:10px;color:var(--rl-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:132px}.rl-horse .formfinish{font-size:17px;font-weight:900}.rl-horse .formfinish.f1{color:#e5484d}.rl-horse .formfinish.f2{color:#4c9aff}.rl-horse .formfinish.f3{color:#30a46c}.rl-horse .formcell .muted{font-size:10px}.rl-horse .modalback{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;display:flex;align-items:center;justify-content:center;padding:18px}.rl-horse .modal{background:var(--rl-panel);border:1px solid var(--line);border-radius:14px;max-width:560px;width:100%;max-height:82vh;overflow-y:auto;padding:20px}.rl-horse .modalhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}.rl-horse .modalclose{background:var(--rl-hover);border:1px solid var(--rl-border);color:var(--rl-text);border-radius:8px;width:32px;height:32px;font-size:16px;line-height:1;padding:0}.rl-horse .modal .detailtext{max-width:none}.rl-horse .celllinks{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:2px}.rl-horse th:nth-child(-n+4),.rl-horse td:nth-child(-n+4){position:sticky;background:var(--rl-panel);z-index:3}.rl-horse thead th:nth-child(-n+4){z-index:5}.rl-horse th:nth-child(1),.rl-horse td:nth-child(1){left:0;width:44px;min-width:44px;max-width:44px;box-sizing:border-box}.rl-horse th:nth-child(2),.rl-horse td:nth-child(2){left:43px;width:48px;min-width:48px;max-width:48px;box-sizing:border-box}.rl-horse th:nth-child(3),.rl-horse td:nth-child(3){left:90px;width:58px;min-width:58px;max-width:58px;box-sizing:border-box}.rl-horse th:nth-child(4),.rl-horse td:nth-child(4){left:147px;min-width:150px;box-sizing:border-box;box-shadow:10px 0 14px -10px rgba(0,0,0,.55)}.rl-horse .notice{border:1px solid var(--rl-accent-bg);background:var(--rl-panel);border-radius:10px;padding:14px 18px;color:var(--rl-accent-bright);font-size:12px;margin-top:18px}.rl-horse .alert{border-color:var(--rl-danger-border);background:var(--rl-panel);color:var(--rl-danger-text)}.rl-horse .primary{background:var(--green);color:var(--rl-accent-bg);padding:12px 17px;border-radius:8px;font-weight:900;font-size:12px;display:inline-block}
-        .rl-horse .mobilemenu{display:none}.rl-horse .empty{padding:34px;text-align:center;color:var(--rl-muted)}
+        .rl-horse .mobilemenu{display:none}.rl-horse .empty{padding:34px;text-align:center;color:var(--rl-muted)}.rl-horse .evhead{font-weight:900;font-size:13px;margin:18px 0 4px;color:var(--green)}.rl-horse .evblock{border-top:1px solid var(--rl-border);padding:10px 0 4px;margin-top:10px}.rl-horse .evtitle{font-size:11px;font-weight:800;color:var(--rl-muted);letter-spacing:1px;margin-bottom:6px}.rl-horse .evrow{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:3px 0;color:var(--rl-sub)}.rl-horse .evrow span:first-child{font-weight:700;color:var(--rl-text);white-space:nowrap}.rl-horse .evtext{font-size:12px;line-height:1.7;color:var(--rl-sub)}.rl-horse .evnote{font-size:10px;color:var(--rl-muted);margin-top:10px;line-height:1.6}
         @media(max-width:1050px){.rl-horse .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.rl-horse .content{padding:28px 22px 60px}}
         .rl-horse th:nth-child(-n+3),.rl-horse td:nth-child(-n+3){position:sticky;background:var(--rl-panel);z-index:3}
         .rl-horse thead th:nth-child(-n+3){z-index:5}
@@ -389,7 +442,7 @@ export default function HorseRacesPage() {
             <div className="toolbar"><div className="chips">{(["単勝", "複勝"] as const).map(t => <button key={t} className={`chip ${oddsType === t ? "on" : ""}`} onClick={() => setOddsType(t)}>{t}オッズ</button>)}</div><label>並び順 <select value={sortBy} onChange={event => setSortBy(event.target.value as typeof sortBy)}>
               <option value="number">馬番</option><option value="model">固定モデル勝率</option>
               <option value="market">市場推定勝率</option><option value="ev">期待回収率</option>
-            </select></label>{marksNote && <span className="sub" role="status">{marksNote}</span>}{formState === "loading" && <span className="sub">近走データを取得中…</span>}{formState === "error" && <span className="sub">近走データを取得できませんでした（PC接続が必要です）</span>}</div>
+            </select></label>{marksNote && <span className="sub" role="status">{marksNote}</span>}{formState === "loading" && <span className="sub">近走データを取得中…</span>}{formState === "error" && <span className="sub">近走データを取得できませんでした（PC接続が必要です）</span>}{evidenceState === "loading" && <span className="sub">根拠データを取得中…</span>}{evidenceState === "error" && <span className="sub">根拠データを取得できませんでした（PC接続が必要です）</span>}</div>
             <div className="tablewrap"><table><thead><tr>{["馬番", "印", "馬名", "斤量", `${oddsType}オッズ`, ...(showPopularity ? ["人気"] : []), "固定モデル勝率", ...(showMarket ? ["市場推定勝率"] : []), ...(showEv ? ["期待回収率"] : []), "AI評価 / 分析", ...(formCols > 0 ? formLabels.slice(0, formCols) : [])].map(h => <th key={h}>{h}</th>)}</tr></thead><tbody>
               {entryRows.map(({ horse: h, pred, market, ev }) => {
                 const odds = detail.horse_odds.filter(o => o.bet_type === oddsType && Number(o.selection) === h.horse_number)
@@ -411,6 +464,21 @@ export default function HorseRacesPage() {
                     <div className="modalhead"><strong>{mh.horse_number}番 {mh.horse_name} のAI分析</strong><button type="button" className="modalclose" aria-label="閉じる" onClick={() => setExpandedHorse(null)}>×</button></div>
                     <p className="detailtext">{mp.reason ?? "分析理由は未登録です。"}</p>
                     <p className="sub">評価：{mp.recommendation ?? "-"} / 勝率：{mp.win_probability != null ? (mp.win_probability * 100).toFixed(1) + "%" : "-"} / モデル：{mp.model_version}</p>
+                    {(() => {
+                      const ev = mh.horse_id ? evidenceByHorse[mh.horse_id] : null;
+                      if (evidenceState === "loading") return <p className="sub">根拠データを取得中…</p>;
+                      if (!ev) return null;
+                      const hasEv = ev.conditions.length > 0 || ev.jockey != null || ev.recent != null || (ev.pedigree != null && (ev.pedigree.sire != null || ev.pedigree.damsire != null));
+                      if (!hasEv) return null;
+                      return (<>
+                        <div className="evhead">根拠データ（実測）</div>
+                        {ev.conditions.length > 0 && <div className="evblock"><div className="evtitle">条件別成績（今回の条件で集計）</div>{ev.conditions.map(c => <div className="evrow" key={c.key}><span>{c.label}</span><span>{fmtStat(c)}{c.starts <= 4 ? " ※少数" : ""}</span></div>)}</div>}
+                        {ev.jockey && ev.jockey.entered && <div className="evblock"><div className="evtitle">騎手</div><div className="evtext">{ev.jockey.combo ? `${ev.jockey.entered}騎手とのコンビ：${fmtStat(ev.jockey.combo)}` : `${ev.jockey.entered}騎手とは今回が初コンビ`}{ev.jockey.changed === true && ev.jockey.last_jockey ? `／前走の${ev.jockey.last_jockey}騎手から乗り替わり` : ev.jockey.changed === false ? "／前走から継続騎乗" : ""}</div></div>}
+                        {ev.pedigree && (ev.pedigree.sire || ev.pedigree.damsire) && <div className="evblock"><div className="evtitle">血統</div><div className="evtext">父：{ev.pedigree.sire ?? "―"}／母父：{ev.pedigree.damsire ?? "―"}</div>{ev.pedigree.sire_surface && <div className="evtext">父産駒の{ev.pedigree.sire_surface.surface}成績：{fmtStat(ev.pedigree.sire_surface)}（産駒{ev.pedigree.sire_surface.horses}頭）</div>}{ev.pedigree.sire_distance && <div className="evtext">父産駒の{ev.pedigree.sire_distance.band}成績：{fmtStat(ev.pedigree.sire_distance)}（産駒{ev.pedigree.sire_distance.horses}頭）</div>}</div>}
+                        {ev.recent && <div className="evblock"><div className="evtitle">前走とローテーション</div><div className="evtext">前走：{ev.recent.date} {ev.recent.venue}{ev.recent.race_number}R{ev.recent.class_label ? `（${ev.recent.class_label}）` : ""} {ev.recent.surface ?? ""}{ev.recent.distance ?? ""} {ev.recent.going ?? ""} ― {ev.recent.finish ?? "―"}着／{ev.recent.starters ?? "?"}頭（{ev.recent.jockey ?? "―"}騎手）</div>{(ev.recent.last3f || ev.recent.margin || ev.recent.passing) && <div className="evtext">{ev.recent.last3f ? `上がり3F ${ev.recent.last3f}` : ""}{ev.recent.last3f_rank ? `（${ev.recent.last3f_field}頭中${ev.recent.last3f_rank}位）` : ""}{ev.recent.margin ? `／着差 ${ev.recent.margin}` : ""}{ev.recent.passing ? `／通過 ${ev.recent.passing}` : ""}</div>}{ev.recent.interval_days != null && <div className="evtext">前走から{ev.recent.interval_days}日{ev.recent.interval_days >= 90 ? "（休養明け）" : ev.recent.interval_days <= 8 ? "（連闘）" : ""}</div>}</div>}
+                        <p className="evnote">根拠データはこのレースの開催日より前の実績を集計したものです。母数（戦数）が少ない項目には「※少数」と表示しています。</p>
+                      </>);
+                    })()}
                   </div>
                 </div>
               );
