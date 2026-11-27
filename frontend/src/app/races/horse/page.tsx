@@ -35,7 +35,6 @@ type HorseOdds = {
   fetched_at: string;
 };
 type RaceDetail = RaceSummary & {
-  jv_race_key: string | null;
   surface: string | null;
   distance: number | null;
   track_condition: string | null;
@@ -171,7 +170,7 @@ export default function HorseRacesPage() {
     async function loadDetail(showLoading: boolean) {
       if (showLoading) { setLoadingDetail(true); setDetail(null); setPredictions([]); setPredictionError(false); }
       const { data, error: dbError } = await supabase.from("horse_races")
-        .select(`id,race_date,venue,race_number,race_name,jv_race_key,surface,distance,track_condition,weather,starts_at,
+        .select(`id,race_date,venue,race_number,race_name,surface,distance,track_condition,weather,starts_at,
           horse_entries(id,horse_id,horse_number,bracket_number,horse_name,jockey_name,horse_age,horse_sex,carried_weight,popularity,entry_status),
           horse_odds(id,bet_type,selection,odds,odds_max,odds_status,fetched_at)`)
         .eq("id", selectedRace.id).single();
@@ -287,63 +286,6 @@ export default function HorseRacesPage() {
   const formLabels = ["前走", "2走前", "3走前", "4走前", "5走前"];
   const formCols = formState === "ok"
     ? Math.max(1, Math.min(5, Math.max(0, ...Object.values(formByHorse).map(v => v.length)))) : 0;
-  // AIお勧め買い目：ページが読み込んだAI予測（予測勝率）のランキングから決定的に組み立てる。
-  const pctText = (x: number) => `${(x * 100).toFixed(1)}%`;
-  type RankedHorse = { num: number; name: string; prob: number };
-  const rankedHorses: RankedHorse[] = activeEntries
-    .filter(h => h.horse_number !== null)
-    .map(h => ({ num: h.horse_number as number, name: h.horse_name,
-      prob: fixedByHorse.get(h.horse_number as number)?.win_probability ?? null }))
-    .filter((x): x is RankedHorse => x.prob !== null)
-    .sort((a, b) => (b.prob - a.prob) || (a.num - b.num));
-  const recTop = rankedHorses[0] ?? null;
-  const recPartners = rankedHorses.slice(1, 4);
-  const recPartners5 = rankedHorses.slice(1, 5);
-  const pairSelections = recTop
-    ? recPartners.map(p => [recTop.num, p.num].sort((a, b) => a - b).join("-")) : [];
-  const tripleSelections = recTop && recPartners5.length >= 2
-    ? recPartners5.flatMap((p, i) => recPartners5.slice(i + 1)
-        .map(q => [recTop.num, p.num, q.num].sort((a, b) => a - b).join("-"))) : [];
-  const sumProbs = (xs: RankedHorse[]) => xs.reduce((s, x) => s + x.prob, 0);
-  const recPlaceOdds = recTop ? (detail?.horse_odds ?? [])
-    .filter(o => o.bet_type === "複勝" && Number(o.selection) === recTop.num)
-    .sort((a, b) => Date.parse(b.fetched_at) - Date.parse(a.fetched_at))
-    .find(o => o.odds_status === "available" && Number(o.odds) > 0) : undefined;
-  const recPlaceOddsText = !recPlaceOdds ? null
-    : recPlaceOdds.odds_max != null
-      ? `${Number(recPlaceOdds.odds).toFixed(1)}〜${Number(recPlaceOdds.odds_max).toFixed(1)}倍`
-      : `${Number(recPlaceOdds.odds).toFixed(1)}倍`;
-  const recTopWinOdds = recTop ? winOdds.get(recTop.num) : undefined;
-  const [recOdds, setRecOdds] = useState<Record<string, { odds: number | null; popularity: number | null }>>({});
-  const recRaceKey = detail?.jv_race_key && /^\d{16}$/.test(detail.jv_race_key) ? detail.jv_race_key : null;
-  const recSig = recRaceKey && recTop ? `${recRaceKey}:${pairSelections.join(",")}|${tripleSelections.join(",")}` : "";
-  useEffect(() => {
-    if (!recSig || !recRaceKey) { setRecOdds({}); return; }
-    let active = true;
-    const fetchBulk = (betType: string, sels: string[]) => {
-      if (sels.length === 0) return;
-      fetch(`/api/combo-odds?race_key=${recRaceKey}&bet_type=${encodeURIComponent(betType)}&selections=${encodeURIComponent(sels.join(","))}`, { cache: "no-store" })
-        .then(async res => {
-          if (!res.ok) return;
-          const body: { results?: Record<string, { odds: number | null; popularity: number | null }> } = await res.json();
-          if (!active || !body.results) return;
-          setRecOdds(prev => {
-            const next = { ...prev };
-            for (const [sel, v] of Object.entries(body.results ?? {})) {
-              next[`${betType}:${sel}`] = { odds: v.odds, popularity: v.popularity };
-            }
-            return next;
-          });
-        })
-        .catch(() => { /* 取得できない組み合わせは「—」表示にする */ });
-    };
-    fetchBulk("馬連", pairSelections);
-    fetchBulk("ワイド", pairSelections);
-    fetchBulk("3連複", tripleSelections);
-    return () => { active = false; };
-    // recSig がレースと買い目の組み合わせを一意に表すため、依存は recSig のみでよい。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recSig]);
   const nav = [
     { href: "/", label: "ダッシュボード", symbol: "⌂" },
     { href: "/races/auto", label: "レース一覧", symbol: "▤" },
@@ -369,7 +311,6 @@ export default function HorseRacesPage() {
         .rl-horse .toolbar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin:15px 0}.rl-horse .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.rl-horse table{border-collapse:collapse;width:100%;min-width:1050px}.rl-horse th,.rl-horse td{border-right:1px solid var(--rl-border)}.rl-horse th:last-child,.rl-horse td:last-child{border-right:0}.rl-horse th{text-align:left;color:var(--rl-muted);background:var(--rl-panel);font-size:11px;padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap}.rl-horse td{padding:11px 10px;border-bottom:1px solid var(--rl-border);font-size:12px;vertical-align:middle}.rl-horse tr:last-child td{border-bottom:0}.rl-horse tbody tr:hover{background:var(--rl-hover)}.rl-horse .horse{font-weight:800;color:var(--rl-text);white-space:nowrap}.rl-horse .number{font-weight:900;color:var(--green)}.rl-horse .muted{color:var(--rl-muted)}.rl-horse .detailbtn{border:1px solid var(--rl-border);background:var(--rl-hover);color:var(--rl-accent-bright);border-radius:6px;padding:7px 9px;margin-top:5px;font-size:11px}.rl-horse .detailtext{white-space:pre-wrap;max-width:230px;line-height:1.6;margin-top:8px;color:var(--rl-sub)}
         .rl-horse .markbtn2{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;border:2px solid var(--rl-border);background:transparent;color:var(--rl-muted);font-size:17px;font-weight:900;line-height:1;padding:0}.rl-horse .markbtn2:disabled{opacity:.45}.rl-horse .markbtn2.m-primary{border-color:#e5484d;color:#e5484d;background:rgba(229,72,77,.13)}.rl-horse .markbtn2.m-secondary{border-color:#4c9aff;color:#4c9aff;background:rgba(76,154,255,.13)}.rl-horse .markbtn2.m-third{border-color:#30a46c;color:#30a46c;background:rgba(48,164,108,.13)}.rl-horse .markbtn2.m-attention{border-color:#f5a524;color:#f5a524;background:rgba(245,165,36,.13)}.rl-horse .formcell{min-width:118px;vertical-align:top}.rl-horse .formdate{font-weight:800;font-size:11px;white-space:nowrap}.rl-horse .formname{font-size:10px;color:var(--rl-sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:132px}.rl-horse .formfinish{font-size:17px;font-weight:900}.rl-horse .formfinish.f1{color:#e5484d}.rl-horse .formfinish.f2{color:#4c9aff}.rl-horse .formfinish.f3{color:#30a46c}.rl-horse .formcell .muted{font-size:10px}.rl-horse .modalback{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;display:flex;align-items:center;justify-content:center;padding:18px}.rl-horse .modal{background:var(--rl-panel);border:1px solid var(--line);border-radius:14px;max-width:560px;width:100%;max-height:82vh;overflow-y:auto;padding:20px}.rl-horse .modalhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}.rl-horse .modalclose{background:var(--rl-hover);border:1px solid var(--rl-border);color:var(--rl-text);border-radius:8px;width:32px;height:32px;font-size:16px;line-height:1;padding:0}.rl-horse .modal .detailtext{max-width:none}.rl-horse .celllinks{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:2px}.rl-horse th:nth-child(-n+4),.rl-horse td:nth-child(-n+4){position:sticky;background:var(--rl-panel);z-index:3}.rl-horse thead th:nth-child(-n+4){z-index:5}.rl-horse th:nth-child(1),.rl-horse td:nth-child(1){left:0;width:44px;min-width:44px;max-width:44px;box-sizing:border-box}.rl-horse th:nth-child(2),.rl-horse td:nth-child(2){left:43px;width:48px;min-width:48px;max-width:48px;box-sizing:border-box}.rl-horse th:nth-child(3),.rl-horse td:nth-child(3){left:90px;width:58px;min-width:58px;max-width:58px;box-sizing:border-box}.rl-horse th:nth-child(4),.rl-horse td:nth-child(4){left:147px;min-width:150px;box-sizing:border-box;box-shadow:10px 0 14px -10px rgba(0,0,0,.55)}.rl-horse .notice{border:1px solid var(--rl-accent-bg);background:var(--rl-panel);border-radius:10px;padding:14px 18px;color:var(--rl-accent-bright);font-size:12px;margin-top:18px}.rl-horse .alert{border-color:var(--rl-danger-border);background:var(--rl-panel);color:var(--rl-danger-text)}.rl-horse .primary{background:var(--green);color:var(--rl-accent-bg);padding:12px 17px;border-radius:8px;font-weight:900;font-size:12px;display:inline-block}
         .rl-horse .mobilemenu{display:none}.rl-horse .empty{padding:34px;text-align:center;color:var(--rl-muted)}.rl-horse .evhead{font-weight:900;font-size:13px;margin:18px 0 4px;color:var(--green)}.rl-horse .evblock{border-top:1px solid var(--rl-border);padding:10px 0 4px;margin-top:10px}.rl-horse .evtitle{font-size:11px;font-weight:800;color:var(--rl-muted);letter-spacing:1px;margin-bottom:6px}.rl-horse .evrow{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:3px 0;color:var(--rl-sub)}.rl-horse .evrow span:first-child{font-weight:700;color:var(--rl-text);white-space:nowrap}.rl-horse .evtext{font-size:12px;line-height:1.7;color:var(--rl-sub)}.rl-horse .evnote{font-size:10px;color:var(--rl-muted);margin-top:10px;line-height:1.6}
-        .rl-horse .recbet{border-top:1px solid var(--rl-border);padding:12px 0 6px}.rl-horse .recbet:first-child{border-top:0;padding-top:0}.rl-horse .recbethead{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}.rl-horse .recbettype{font-weight:900;font-size:13px;color:var(--green);white-space:nowrap}.rl-horse .reccombo{font-weight:800;font-size:13px}.rl-horse .recodds{font-size:12px;color:var(--rl-sub);white-space:nowrap}.rl-horse .reccombos{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:7px;font-size:12px}.rl-horse .reccombos span{white-space:nowrap}.rl-horse .recwhy{font-size:12px;line-height:1.7;color:var(--rl-sub);margin-top:6px}.rl-horse .recnote{font-size:10px;color:var(--rl-muted);margin-top:12px;line-height:1.6}
         @media(max-width:1050px){.rl-horse .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.rl-horse .content{padding:28px 22px 60px}}
         .rl-horse th:nth-child(-n+3),.rl-horse td:nth-child(-n+3){position:sticky;background:var(--rl-panel);z-index:3}
         .rl-horse thead th:nth-child(-n+3){z-index:5}
@@ -512,35 +453,6 @@ export default function HorseRacesPage() {
                   {((h.horse_id && /^\d{10}$/.test(h.horse_id)) || pred) && <div className="celllinks">{h.horse_id && /^\d{10}$/.test(h.horse_id) && <a href={`/horses?analysis=${h.horse_id}`}>条件別成績 ↗</a>}{pred && <button className="detailbtn" onClick={() => setExpandedHorse(h.horse_number)}>AI分析を見る</button>}</div>}</td>{formCols > 0 && Array.from({ length: formCols }, (_, i) => { const item = h.horse_id ? formByHorse[h.horse_id]?.[i] : undefined; return (<td key={i} className="formcell">{item ? <><div className="formdate">{item.date.slice(5).replace("-", "/")} {item.venue}{item.race_number}R</div>{item.race_name && <div className="formname">{item.race_name}</div>}<div><span className={`formfinish ${item.finish !== null && item.finish <= 3 ? "f" + item.finish : ""}`}>{item.finish ?? "―"}</span><span className="muted"> 着 / {item.starters ?? "?"}頭 {item.horse_number ?? "?"}番</span></div><div className="muted">{item.surface ?? ""}{item.distance ?? ""} {item.going ?? ""} {item.time ?? ""}</div><div className="muted">{item.jockey ?? ""}{item.carried_weight ? ` ${item.carried_weight.toFixed(1)}` : ""}{item.popularity ? ` / ${item.popularity}番人気` : ""}</div>{(item.passing || item.last3f || item.margin) && <div className="muted">{item.passing ?? ""}{item.last3f ? ` 上${item.last3f}` : ""}{item.margin ? ` / 着差${item.margin}` : ""}</div>}</> : <span className="muted">{i === 0 && h.horse_id ? "初出走" : "―"}</span>}</td>); })}</tr>;
               })}
             </tbody></table>{detail.horse_entries.length === 0 && <div className="empty">出走馬はまだ登録されていません。</div>}</div>
-            {recTop && <>
-              <div className="sectionhead"><b>05</b> AIお勧め買い目</div>
-              <section className="panel">
-                <div className="recbet">
-                  <div className="recbethead"><span className="recbettype">単勝</span><span className="reccombo">{recTop.num}番 {recTop.name}</span><span className="recodds">{recTopWinOdds ? `オッズ ${Number(recTopWinOdds.odds).toFixed(1)}倍` : "オッズ —"}</span></div>
-                  <div className="recwhy">根拠：AI予測1位・予測勝率{pctText(recTop.prob)}。{rankedHorses[1] ? `2位の${rankedHorses[1].num}番とは予測勝率で${((recTop.prob - rankedHorses[1].prob) * 100).toFixed(1)}pt差。` : ""}{recTopWinOdds ? `予測勝率×オッズの目安は${(recTop.prob * Number(recTopWinOdds.odds)).toFixed(2)}。` : ""}</div>
-                </div>
-                <div className="recbet">
-                  <div className="recbethead"><span className="recbettype">複勝</span><span className="reccombo">{recTop.num}番 {recTop.name}</span><span className="recodds">{recPlaceOddsText ? `オッズ ${recPlaceOddsText}` : "オッズ —"}</span></div>
-                  <div className="recwhy">根拠：AI予測1位（予測勝率{pctText(recTop.prob)}）で、出走馬の中で予測勝率が最も高い1頭。</div>
-                </div>
-                {pairSelections.length > 0 && <div className="recbet">
-                  <div className="recbethead"><span className="recbettype">馬連・流し</span><span className="reccombo">軸：{recTop.num}番 {recTop.name}</span></div>
-                  <div className="reccombos">{pairSelections.map((sel, i) => { const o = recOdds[`馬連:${sel}`]; return <span key={sel}>{recTop.num}－{recPartners[i].num}：{o?.odds != null ? `${Number(o.odds).toFixed(1)}倍` : "—"}{o?.popularity != null ? `（${o.popularity}番人気）` : ""}</span>; })}</div>
-                  <div className="recwhy">根拠：AI予測1位を軸に、予測2〜{recPartners.length + 1}位へ流し（{pairSelections.length}点）。相手{recPartners.length}頭の予測勝率合計は{pctText(sumProbs(recPartners))}。</div>
-                </div>}
-                {pairSelections.length > 0 && <div className="recbet">
-                  <div className="recbethead"><span className="recbettype">ワイド・流し</span><span className="reccombo">軸：{recTop.num}番 {recTop.name}</span></div>
-                  <div className="reccombos">{pairSelections.map((sel, i) => { const o = recOdds[`ワイド:${sel}`]; return <span key={sel}>{recTop.num}－{recPartners[i].num}：{o?.odds != null ? `${Number(o.odds).toFixed(1)}倍` : "—"}{o?.popularity != null ? `（${o.popularity}番人気）` : ""}</span>; })}</div>
-                  <div className="recwhy">根拠：AI予測1位を軸に、予測2〜{recPartners.length + 1}位との組み合わせ（{pairSelections.length}点）。</div>
-                </div>}
-                {tripleSelections.length > 0 && <div className="recbet">
-                  <div className="recbethead"><span className="recbettype">{recPartners5.length >= 3 ? "3連複・フォーメーション" : "3連複"}</span><span className="reccombo">軸：{recTop.num}番 {recTop.name}／相手：予測2〜{recPartners5.length + 1}位</span></div>
-                  <div className="reccombos">{tripleSelections.map(sel => { const o = recOdds[`3連複:${sel}`]; return <span key={sel}>{sel.split("-").join("－")}：{o?.odds != null ? `${Number(o.odds).toFixed(1)}倍` : "—"}{o?.popularity != null ? `（${o.popularity}番人気）` : ""}</span>; })}</div>
-                  <div className="recwhy">根拠：AI予測1位を軸に、予測2〜{recPartners5.length + 1}位から2頭を選ぶ組み合わせ（{tripleSelections.length}点）。AI上位3頭の予測勝率合計は{pctText(sumProbs(rankedHorses.slice(0, 3)))}。</div>
-                </div>}
-                <p className="recnote">AI予測確率に基づく参考買い目です。回収率を保証するものではありません。</p>
-              </section>
-            </>}
             <div className="notice">データは表示中のレースについて60秒ごとに再取得します。市場推定勝率は同一時刻の単勝オッズが全出走馬で揃った場合に表示します。期待回収率は固定モデル勝率と取得オッズから求める推定値です。</div>
             {expandedHorse !== null && (() => {
               const mh = detail.horse_entries.find(e => e.horse_number === expandedHorse);
