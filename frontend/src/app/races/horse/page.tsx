@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePredictionMarks, MarkIcon, MARK_LABELS } from "@/components/RacePredictionMarks";
+import RaceChat from "./RaceChat";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -391,6 +392,12 @@ export default function HorseRacesPage() {
     status: o.odds_status,
   }));
   const recResult = recBetsCompute(recInput, recOddsRows);
+  const chatContext = recResult && detail ? {
+    race: `${detail.race_date} ${detail.venue} ${detail.race_number}R${detail.race_name ? ` ${detail.race_name}` : ""}`,
+    entries: activeEntries.filter(h => h.horse_number !== null).map(h => ({ num: h.horse_number as number, name: h.horse_name, jockey: h.jockey_name ?? "" })),
+    top: [...recInput].sort((a, b) => (b.prob - a.prob) || (a.num - b.num)).slice(0, 8).map(h => ({ num: h.num, name: h.name, probPct: Math.round(h.prob * 1000) / 10 })),
+    recSummary: recResult.lines.map(l => `${l.type}：${l.combo}${l.oddsText ? `（${l.oddsText}）` : ""} ${l.why}`).join("\n"),
+  } : null;
   const nav = [
     { href: "/", label: "ダッシュボード", symbol: "⌂" },
     { href: "/races/auto", label: "レース一覧", symbol: "▤" },
@@ -569,6 +576,10 @@ export default function HorseRacesPage() {
                 ))}
                 <p className="recnote">AI予測確率に基づく参考買い目です。回収率を保証するものではありません。</p>
               </section>
+            </>}
+            {recResult && detail && chatContext && <>
+              <div className="sectionhead"><b>06</b> やっちょに聞く</div>
+              <RaceChat raceId={detail.id} context={chatContext} />
             </>}
             <div className="notice">データは表示中のレースについて60秒ごとに再取得します。市場推定勝率は同一時刻の単勝オッズが全出走馬で揃った場合に表示します。期待回収率は固定モデル勝率と取得オッズから求める推定値です。</div>
             {expandedHorse !== null && (() => {
