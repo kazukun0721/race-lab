@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePredictionMarks, MarkIcon, MARK_LABELS } from "@/components/RacePredictionMarks";
 import RaceChat from "./RaceChat";
+import YacchoBets from "./YacchoBets";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -565,18 +566,20 @@ export default function HorseRacesPage() {
                   {((h.horse_id && /^\d{10}$/.test(h.horse_id)) || pred) && <div className="celllinks">{h.horse_id && /^\d{10}$/.test(h.horse_id) && <a href={`/horses?analysis=${h.horse_id}`}>条件別成績 ↗</a>}{pred && <button className="detailbtn" onClick={() => setExpandedHorse(h.horse_number)}>AI分析を見る</button>}</div>}</td>{formCols > 0 && Array.from({ length: formCols }, (_, i) => { const item = h.horse_id ? formByHorse[h.horse_id]?.[i] : undefined; return (<td key={i} className="formcell">{item ? <><div className="formdate">{item.date.slice(5).replace("-", "/")} {item.venue}{item.race_number}R</div>{item.race_name && <div className="formname">{item.race_name}</div>}<div><span className={`formfinish ${item.finish !== null && item.finish <= 3 ? "f" + item.finish : ""}`}>{item.finish ?? "―"}</span><span className="muted"> 着 / {item.starters ?? "?"}頭 {item.horse_number ?? "?"}番</span></div><div className="muted">{item.surface ?? ""}{item.distance ?? ""} {item.going ?? ""} {item.time ?? ""}</div><div className="muted">{item.jockey ?? ""}{item.carried_weight ? ` ${item.carried_weight.toFixed(1)}` : ""}{item.popularity ? ` / ${item.popularity}番人気` : ""}</div>{(item.passing || item.last3f || item.margin) && <div className="muted">{item.passing ?? ""}{item.last3f ? ` 上${item.last3f}` : ""}{item.margin ? ` / 着差${item.margin}` : ""}</div>}</> : <span className="muted">{i === 0 && h.horse_id ? "初出走" : "―"}</span>}</td>); })}</tr>;
               })}
             </tbody></table>{detail.horse_entries.length === 0 && <div className="empty">出走馬はまだ登録されていません。</div>}</div>
-            {recResult && <>
-              <div className="sectionhead"><b>05</b> AIお勧め買い目</div>
-              <section className="panel">
-                {recResult.lines.map((ln, i) => (
-                  <div className="recbet" key={i}>
-                    <div className="recbethead"><span className="recbettype">{ln.type}</span><span className="reccombo">{ln.combo}</span>{ln.oddsText && <span className="recodds">{ln.oddsText}</span>}</div>
-                    <div className="recwhy">{ln.why}</div>
-                  </div>
-                ))}
-                <p className="recnote">AI予測確率に基づく参考買い目です。回収率を保証するものではありません。</p>
-              </section>
-            </>}
+            {recResult && (
+              <YacchoBets raceId={detail.id} fallback={<>
+                <div className="sectionhead"><b>05</b> AIお勧め買い目</div>
+                <section className="panel">
+                  {recResult.lines.map((ln, i) => (
+                    <div className="recbet" key={i}>
+                      <div className="recbethead"><span className="recbettype">{ln.type}</span><span className="reccombo">{ln.combo}</span>{ln.oddsText && <span className="recodds">{ln.oddsText}</span>}</div>
+                      <div className="recwhy">{ln.why}</div>
+                    </div>
+                  ))}
+                  <p className="recnote">AI予測確率に基づく参考買い目です。回収率を保証するものではありません。</p>
+                </section>
+              </>} />
+            )}
             {recResult && detail && chatContext && <>
               <div className="sectionhead"><b>06</b> やっちょに聞く</div>
               <RaceChat raceId={detail.id} context={chatContext} />
