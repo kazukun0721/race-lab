@@ -142,7 +142,7 @@ function YacchoBetsInner({ raceId, fallback }: { raceId: string; fallback: React
   return (
     <>
       <div className="sectionhead">
-        <b>05</b> やっちょお勧め買い目
+        <b>05</b> AIお勧め買い目
       </div>
       <section className="panel">
         {data.pace_note && (
@@ -194,7 +194,7 @@ function YacchoBetsInner({ raceId, fallback }: { raceId: string; fallback: React
           </div>
         )}
         <p className="recnote">
-          やっちょがAI予測と脚質・展開データから考えた参考買い目です。回収率を保証するものではありません。
+          AI予測と脚質・展開データからAIが考えた参考買い目です。回収率を保証するものではありません。
           {generatedLabel ? `（生成：${generatedLabel}）` : ""}
         </p>
       </section>

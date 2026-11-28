@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
   const base = process.env.RACE_LAB_DATA_CENTER_URL;
   if (!base) {
-    return NextResponse.json({ error: "やっちょ買い目が未設定です。" }, { status: 502 });
+    return NextResponse.json({ error: "AI買い目が未設定です。" }, { status: 502 });
   }
   const url = new URL("/yaccho-bets", base);
   url.search = new URLSearchParams({ race_id: raceId }).toString();
@@ -39,20 +39,20 @@ export async function GET(request: Request) {
     });
     if (response.status === 404) {
       return NextResponse.json(
-        { error: "やっちょ買い目はまだ生成されていません。" },
+        { error: "AI買い目はまだ生成されていません。" },
         { status: 404 },
       );
     }
     if (!response.ok) {
       return NextResponse.json(
-        { error: "やっちょ買い目を取得できませんでした。" },
+        { error: "AI買い目を取得できませんでした。" },
         { status: 502 },
       );
     }
     return NextResponse.json(await response.json());
   } catch {
     return NextResponse.json(
-      { error: "やっちょ買い目に接続できませんでした。" },
+      { error: "AI買い目に接続できませんでした。" },
       { status: 502 },
     );
   }

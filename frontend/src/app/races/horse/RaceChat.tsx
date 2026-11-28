@@ -156,7 +156,7 @@ function RaceChatInner({ raceId, context }: { raceId: string; context: RaceChatC
       >
         {visible.length === 0 && (
           <p style={{ fontSize: 12, color: "var(--rl-muted)", lineHeight: 1.7 }}>
-            このレースについてやっちょに質問できます。例：「1位の根拠は？」「穴馬はいる？」
+            このレースについてAIに質問できます。例：「1位の根拠は？」「穴馬はいる？」
           </p>
         )}
         {visible.map(m => {
@@ -193,7 +193,7 @@ function RaceChatInner({ raceId, context }: { raceId: string; context: RaceChatC
           onChange={e => setInput(e.target.value)}
           maxLength={1000}
           rows={2}
-          placeholder="やっちょへの質問を書く（1000字まで）"
+          placeholder="AIへの質問を書く（1000字まで）"
           style={{
             flex: 1,
             border: "1px solid var(--rl-border)",
@@ -219,7 +219,7 @@ function RaceChatInner({ raceId, context }: { raceId: string; context: RaceChatC
         <p style={{ fontSize: 11, color: "var(--rl-danger-text)", marginTop: 8 }}>{sendError}</p>
       )}
       <p style={{ fontSize: 10, color: "var(--rl-muted)", marginTop: 10, lineHeight: 1.6 }}>
-        返事はやっちょが手作業で返すので、少し時間がかかります。PCが起動していないと返事は来ません。
+        返事はAIが手作業で返すので、少し時間がかかります。PCが起動していないと返事は来ません。
       </p>
     </section>
   );
