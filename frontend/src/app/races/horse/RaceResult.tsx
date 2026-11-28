@@ -196,7 +196,7 @@ function RaceResultInner({ raceId }: { raceId: string }) {
   return (
     <>
       <div className="sectionhead">
-        <b>07</b> 結果とやっちょの答え合わせ
+        <b>07</b> 結果とAIの答え合わせ
       </div>
       {result.provisional && (
         <p className="recnote">※速報値です。確定後に変わる場合があります。</p>
@@ -287,13 +287,13 @@ function RaceResultInner({ raceId }: { raceId: string }) {
               </div>
             )}
             <p className="recnote">
-              AI予測と05 AIお勧め買い目に対するやっちょの振り返りです。
+              AI予測と05 AIお勧め買い目に対するAIの振り返りです。
               {reviewLabel ? `（生成：${reviewLabel}）` : ""}
             </p>
           </>
         ) : (
           <p className="recnote">
-            やっちょの答え合わせはまだです。
+            AIの答え合わせはまだです。
             {generatedLabel ? `（結果取得：${generatedLabel}）` : ""}
           </p>
         )}
