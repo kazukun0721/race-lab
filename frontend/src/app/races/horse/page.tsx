@@ -581,7 +581,7 @@ export default function HorseRacesPage() {
               </>} />
             )}
             {recResult && detail && chatContext && <>
-              <div className="sectionhead"><b>06</b> やっちょに聞く</div>
+              <div className="sectionhead"><b>06</b> AIに聞く</div>
               <RaceChat raceId={detail.id} context={chatContext} />
             </>}
             <div className="notice">データは表示中のレースについて60秒ごとに再取得します。市場推定勝率は同一時刻の単勝オッズが全出走馬で揃った場合に表示します。期待回収率は固定モデル勝率と取得オッズから求める推定値です。</div>
