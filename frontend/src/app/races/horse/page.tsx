@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePredictionMarks, MarkIcon, MARK_LABELS } from "@/components/RacePredictionMarks";
 import RaceChat from "./RaceChat";
 import YacchoBets from "./YacchoBets";
+import RaceResult from "./RaceResult";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -584,6 +585,7 @@ export default function HorseRacesPage() {
               <div className="sectionhead"><b>06</b> AIに聞く</div>
               <RaceChat raceId={detail.id} context={chatContext} />
             </>}
+            <RaceResult raceId={detail.id} />
             <div className="notice">データは表示中のレースについて60秒ごとに再取得します。市場推定勝率は同一時刻の単勝オッズが全出走馬で揃った場合に表示します。期待回収率は固定モデル勝率と取得オッズから求める推定値です。</div>
             {expandedHorse !== null && (() => {
               const mh = detail.horse_entries.find(e => e.horse_number === expandedHorse);
