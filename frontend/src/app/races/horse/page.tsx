@@ -292,13 +292,14 @@ export default function HorseRacesPage() {
   // AI rec bets v2: synchronous compute from already-loaded predictions and win/place odds.
   // No new hooks, no fetch. Pure compute is between the REC-BETS markers (unit-test extractable).
   // REC-BETS-BEGIN
-  type RecHorse = { num: number; name: string; prob: number };
+  type RecHorse = { num: number; name: string; prob: number; popularity: number | null };
   type RecOddsRow = { betType: string; selection: number; odds: number; oddsMax: number | null; fetchedAt: number; status: string };
   type RecLine = { type: string; combo: string; oddsText: string | null; why: string };
-  function recBetsCompute(horses: RecHorse[], oddsRows: RecOddsRow[]): { lines: RecLine[] } | null {
+  type RecDark = { num: number; name: string; rank: number; prob: number; odds: number; popularity: number | null };
+  function recBetsCompute(horses: RecHorse[], oddsRows: RecOddsRow[]): { lines: RecLine[]; dark: RecDark | null } | null {
     const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
     const ranked = horses
-      .map(h => ({ num: h.num, name: h.name, prob: Number(h.prob) }))
+      .map(h => ({ num: h.num, name: h.name, prob: Number(h.prob), popularity: h.popularity ?? null }))
       .filter(h => Number.isInteger(h.num) && h.num > 0 && Number.isFinite(h.prob))
       .sort((a, b) => (b.prob - a.prob) || (a.num - b.num));
     const top = ranked[0] ?? null;
@@ -375,7 +376,17 @@ export default function HorseRacesPage() {
         why: `買い目：${triples.join("、")}（${triples.length}点）。根拠：AI予測1位を軸に、予測2〜${partners5.length + 1}位から2頭を選ぶ組み合わせ。AI上位3頭の予測勝率合計は${pct(sumProbs(ranked.slice(0, 3)))}。オッズは予想登録画面で確認できます。`,
       });
     }
-    return { lines };
+    let dark: RecDark | null = null;
+    for (let i = 0; i < ranked.length && i < 5; i++) {
+      const cand = ranked[i];
+      const candRow = pickOdds("単勝", cand.num);
+      if (!candRow) continue;
+      const candOdds = Number(candRow.odds);
+      if (!Number.isFinite(candOdds) || candOdds < 8.0) continue;
+      dark = { num: cand.num, name: cand.name, rank: i + 1, prob: cand.prob, odds: candOdds, popularity: cand.popularity };
+      break;
+    }
+    return { lines, dark };
   }
   // REC-BETS-END
   const recInput: RecHorse[] = [];
@@ -383,7 +394,7 @@ export default function HorseRacesPage() {
     if (h.horse_number === null) continue;
     const pr = fixedByHorse.get(h.horse_number);
     if (!pr || pr.win_probability === null) continue;
-    recInput.push({ num: h.horse_number, name: h.horse_name, prob: Number(pr.win_probability) });
+    recInput.push({ num: h.horse_number, name: h.horse_name, prob: Number(pr.win_probability), popularity: h.popularity ?? null });
   }
   const recOddsRows: RecOddsRow[] = (detail?.horse_odds ?? []).map(o => ({
     betType: o.bet_type,
@@ -394,11 +405,28 @@ export default function HorseRacesPage() {
     status: o.odds_status,
   }));
   const recResult = recBetsCompute(recInput, recOddsRows);
+  const darkHorse = recResult?.dark ?? null;
+  const markDefs = [
+    { key: "primary", symbol: "◎" },
+    { key: "secondary", symbol: "○" },
+    { key: "third", symbol: "▲" },
+    { key: "attention", symbol: "△" },
+  ] as const;
+  const markedParts: string[] = [];
+  for (const def of markDefs) {
+    for (const h of activeEntries) {
+      if (h.horse_number !== null && (marks[h.horse_number] ?? "none") === def.key) {
+        markedParts.push(`${def.symbol}${h.horse_number}番 ${h.horse_name}`);
+      }
+    }
+  }
+  const marksText = markedParts.length > 0 ? `ユーザーの印：${markedParts.join(" / ")}` : null;
   const chatContext = recResult && detail ? {
     race: `${detail.race_date} ${detail.venue} ${detail.race_number}R${detail.race_name ? ` ${detail.race_name}` : ""}`,
     entries: activeEntries.filter(h => h.horse_number !== null).map(h => ({ num: h.horse_number as number, name: h.horse_name, jockey: h.jockey_name ?? "" })),
     top: [...recInput].sort((a, b) => (b.prob - a.prob) || (a.num - b.num)).slice(0, 8).map(h => ({ num: h.num, name: h.name, probPct: Math.round(h.prob * 1000) / 10 })),
-    recSummary: recResult.lines.map(l => `${l.type}：${l.combo}${l.oddsText ? `（${l.oddsText}）` : ""} ${l.why}`).join("\n"),
+    recSummary: recResult.lines.map(l => `${l.type}：${l.combo}${l.oddsText ? `（${l.oddsText}）` : ""} ${l.why}`).join("\n") + (darkHorse ? `\n穴馬：${darkHorse.num}番 ${darkHorse.name}` : ""),
+    ...(marksText ? { marks: marksText } : {}),
   } : null;
   const nav = [
     { href: "/", label: "ダッシュボード", symbol: "⌂" },
@@ -580,6 +608,12 @@ export default function HorseRacesPage() {
                   <p className="recnote">AI予測確率に基づく参考買い目です。回収率を保証するものではありません。</p>
                 </section>
               </>} />
+            )}
+            {darkHorse && (
+              <section className="panel" style={{ marginTop: 12 }}>
+                <div style={{ fontWeight: 900, fontSize: 13 }}>穴馬：{darkHorse.num}番 {darkHorse.name}</div>
+                <div className="recwhy">根拠：AI予測{darkHorse.rank}位（勝率{(darkHorse.prob * 100).toFixed(1)}%）なのに単勝{darkHorse.odds.toFixed(1)}倍{darkHorse.popularity !== null ? `・${darkHorse.popularity}番人気` : ""}。</div>
+              </section>
             )}
             {recResult && detail && chatContext && <>
               <div className="sectionhead"><b>06</b> AIに聞く</div>

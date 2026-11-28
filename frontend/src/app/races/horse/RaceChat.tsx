@@ -8,6 +8,7 @@ export type RaceChatContext = {
   entries: { num: number; name: string; jockey: string }[];
   top: { num: number; name: string; probPct: number }[];
   recSummary: string;
+  marks?: string;
 };
 
 type ChatMessage = {
